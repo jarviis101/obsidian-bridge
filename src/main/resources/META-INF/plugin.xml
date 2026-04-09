@@ -14,8 +14,7 @@
             <li>YAML frontmatter parsing and display</li>
             <li>Interactive graph view (D3.js)</li>
             <li>Code ↔ Notes bridging via <code>TODO/FIXME: [[Note]]</code> comments</li>
-            <li>Daily notes integration and templates</li>
-            <li>Multi-vault support</li>
+<li>Multi-vault support</li>
         </ul>
         Works with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.
     ]]></description>
@@ -114,12 +113,6 @@
     <actions>
         <group id="ObsidianBridge.ActionGroup" text="Obsidian" popup="true">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
-
-            <action
-                id="ObsidianBridge.DailyNote"
-                class="dev.jarviis.obsidian.actions.DailyNoteAction"
-                text="Open Today's Daily Note"
-                description="Open or create today's daily note in the vault"/>
 
             <action
                 id="ObsidianBridge.OpenInObsidian"

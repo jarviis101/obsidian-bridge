@@ -40,7 +40,12 @@ class OpenInObsidianAction : AnAction() {
         }
 
         val vaultName = URLEncoder.encode(note.vaultName, Charsets.UTF_8).replace("+", "%20")
-        val filePath = URLEncoder.encode(note.relativePath.toString(), Charsets.UTF_8).replace("+", "%20")
+        // Encode each segment separately so path separators are preserved
+        val filePath = note.relativePath.toString()
+            .removeSuffix(".md")
+            .replace('\\', '/')
+            .split('/')
+            .joinToString("/") { URLEncoder.encode(it, Charsets.UTF_8).replace("+", "%20") }
         val uri = URI("obsidian://open?vault=$vaultName&file=$filePath")
         Desktop.getDesktop().browse(uri)
     }
