@@ -17,11 +17,6 @@
             <li><b>Per-project vault</b> — each project is linked to exactly one vault; auto-detected on first open, configurable via Settings</li>
         </ul>
         <br/>
-        <b>Setup</b><br/>
-        Zero configuration needed — when you open a project the plugin automatically detects any <code>.obsidian/</code>
-        folder inside it and links the vault. To override or set up manually go to
-        <b>Settings → Tools → Obsidian Lens</b>.<br/>
-        <br/>
         Works with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.<br/>
     ]]></description>
 
