@@ -5,16 +5,16 @@
     <vendor url="https://github.com/jarviis">Jarviis</vendor>
 
     <description><![CDATA[
-        Integrate your Obsidian vault directly into JetBrains IDEs.<br/>
+        Bring your Obsidian vault into JetBrains IDEs. View, navigate, and link your notes without leaving the editor.<br/>
+        <br/>
+        <b>Features</b>
         <ul>
-            <li>Navigate and autocomplete <code>[[wiki-links]]</code></li>
-            <li>Backlinks panel — see every note that references the current file</li>
-            <li>Tag tree navigation with hierarchical tag support</li>
-            <li>Vault-wide full-text search</li>
-            <li>YAML frontmatter parsing and display</li>
-            <li>Interactive graph view (D3.js)</li>
-            <li>Code ↔ Notes bridging via <code>TODO/FIXME: [[Note]]</code> comments</li>
-<li>Multi-vault support</li>
+            <li><b>Wiki-link rendering</b> — <code>[[Note|Alias]]</code> folds inline to its display name; click to open, Cmd+Click to edit</li>
+            <li><b>Wiki-link autocompletion</b> — type <code>[[</code> to get note name suggestions from your vault</li>
+            <li><b>Backlinks panel</b> — shows outgoing links (this note → others) and incoming backlinks (others → this note)</li>
+            <li><b>Code ↔ Notes bridge</b> — gutter icons on <code>TODO/FIXME: [[Note]]</code> comments link directly to vault notes</li>
+            <li><b>Open in Obsidian</b> — jump from any note to the Obsidian app in one click</li>
+            <li><b>Multi-vault support</b> — register multiple vaults, all indexed and searchable</li>
         </ul>
         Works with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.
     ]]></description>
