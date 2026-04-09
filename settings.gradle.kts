@@ -1,1 +1,1 @@
-rootProject.name = "obsidian-bridge"
+rootProject.name = "obsidian-lens"
