@@ -1,7 +1,7 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>dev.jarviis.obsidian.obsidian-bridge</id>
-    <name>Obsidian Bridge</name>
+    <id>dev.jarviis.obsidian.obsidian-lens</id>
+    <name>Obsidian Lens</name>
     <vendor url="https://github.com/jarviis">Jarviis</vendor>
 
     <description><![CDATA[
@@ -99,7 +99,7 @@
         <applicationConfigurable
             parentId="tools"
             id="dev.jarviis.obsidian.settings.AppSettingsConfigurable"
-            displayName="Obsidian Bridge"
+            displayName="Obsidian Lens"
             instance="dev.jarviis.obsidian.settings.AppSettingsConfigurable"/>
 
         <projectConfigurable

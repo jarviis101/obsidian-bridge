@@ -14,9 +14,9 @@ class ProjectVaultState : BaseState() {
 
 /**
  * Project-level persistent settings: which vault(s) are linked to this project.
- * Stored in `.idea/obsidian-bridge.xml`.
+ * Stored in `.idea/obsidian-lens.xml`.
  */
-@State(name = "ObsidianBridgeProject", storages = [Storage("obsidian-bridge.xml")])
+@State(name = "ObsidianLensProject", storages = [Storage("obsidian-lens.xml")])
 @Service(Service.Level.PROJECT)
 class ProjectVaultSettings : SimplePersistentStateComponent<ProjectVaultState>(ProjectVaultState()) {
 

@@ -15,9 +15,9 @@ class AppVaultState : BaseState() {
 
 /**
  * Application-level persistent settings: registered vaults and global options.
- * Stored in `obsidian-bridge.xml` in the IDE config directory.
+ * Stored in `obsidian-lens.xml` in the IDE config directory.
  */
-@State(name = "ObsidianBridgeApp", storages = [Storage("obsidian-bridge.xml")])
+@State(name = "ObsidianLensApp", storages = [Storage("obsidian-lens.xml")])
 @Service(Service.Level.APP)
 class AppVaultSettings : SimplePersistentStateComponent<AppVaultState>(AppVaultState()) {
 
