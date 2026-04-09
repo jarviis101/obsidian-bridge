@@ -2,12 +2,17 @@ package dev.jarviis.obsidian.psi
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.editor.colors.EditorColors
+import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.event.CaretEvent
 import com.intellij.openapi.editor.event.CaretListener
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.editor.event.EditorMouseEvent
 import com.intellij.openapi.editor.event.EditorMouseListener
+import com.intellij.openapi.editor.ex.EditorEx
+import com.intellij.openapi.editor.markup.EffectType
+import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.vfs.LocalFileSystem
 import dev.jarviis.obsidian.vault.VaultManager
@@ -22,6 +27,23 @@ class WikiLinkEditorFactoryListener : EditorFactoryListener {
         val editor = event.editor
         editor.addEditorMouseListener(WikiLinkClickListener())
         editor.caretModel.addCaretListener(WikiLinkCaretListener(editor))
+        applyWikiLinkFoldStyle(editor)
+    }
+
+    private fun applyWikiLinkFoldStyle(editor: Editor) {
+        val virtualFile = editor.virtualFile ?: return
+        if (!virtualFile.name.endsWith(".md")) return
+        val editorEx = editor as? EditorEx ?: return
+        val globalScheme = EditorColorsManager.getInstance().globalScheme
+        val linkColor = globalScheme.getAttributes(EditorColors.REFERENCE_HYPERLINK_COLOR)?.foregroundColor
+        editorEx.colorsScheme.setAttributes(
+            EditorColors.FOLDED_TEXT_ATTRIBUTES,
+            TextAttributes().apply {
+                foregroundColor = linkColor
+                effectType = EffectType.LINE_UNDERSCORE
+                effectColor = linkColor
+            }
+        )
     }
 
     override fun editorReleased(event: EditorFactoryEvent) {

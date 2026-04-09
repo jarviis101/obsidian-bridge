@@ -16,7 +16,6 @@ class WikiLinkFoldingBuilder : FoldingBuilderEx(), DumbAware {
     private val WIKILINK_REGEX = Regex("""(!?)\[\[([^\[\]]+?)]]""")
 
     override fun buildFoldRegions(root: PsiElement, document: Document, quick: Boolean): Array<FoldingDescriptor> {
-        // Skip quick pass — the caret listener handles folding for newly typed links
         if (quick) return emptyArray()
 
         val file = root.containingFile ?: return emptyArray()
@@ -28,17 +27,13 @@ class WikiLinkFoldingBuilder : FoldingBuilderEx(), DumbAware {
         val manager = try { service<VaultManager>() } catch (_: Exception) { return emptyArray() }
         val index = manager.indexForPath(path) ?: return emptyArray()
 
-        // Skip any range the user is currently editing (avoid re-collapsing on async pass)
         val editingRange = WikiLinkEditingState.editingRange(document)
 
         val descriptors = mutableListOf<FoldingDescriptor>()
         val text = document.charsSequence
 
         for (match in WIKILINK_REGEX.findAll(text)) {
-            // Skip embeds (![[...]])
             if (match.groupValues[1] == "!") continue
-
-            // Skip the region the user is currently editing
             if (editingRange != null &&
                 match.range.first <= editingRange.last &&
                 match.range.last >= editingRange.first) continue
@@ -47,14 +42,10 @@ class WikiLinkFoldingBuilder : FoldingBuilderEx(), DumbAware {
             val pipeIdx = inner.indexOf('|')
             val rawTarget = (if (pipeIdx >= 0) inner.substring(0, pipeIdx) else inner).trim()
             val alias = if (pipeIdx >= 0) inner.substring(pipeIdx + 1).trim() else null
-
-            // Strip heading/block anchor for resolution
             val target = rawTarget.substringBefore('#').trim()
             if (target.isBlank()) continue
 
-            // Only fold if the note exists in the vault
             val note = index.resolve(target, path) ?: continue
-
             val displayText = alias?.takeIf { it.isNotBlank() } ?: note.name
             val range = TextRange(match.range.first, match.range.last + 1)
             descriptors.add(FoldingDescriptor(root.node, range, null, displayText))

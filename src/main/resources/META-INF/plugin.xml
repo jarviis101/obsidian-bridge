@@ -56,6 +56,7 @@
             language="Markdown"
             implementationClass="dev.jarviis.obsidian.psi.WikiLinkFoldingBuilder"/>
 
+
         <editorFactoryListener
             implementation="dev.jarviis.obsidian.psi.WikiLinkEditorFactoryListener"/>
 
