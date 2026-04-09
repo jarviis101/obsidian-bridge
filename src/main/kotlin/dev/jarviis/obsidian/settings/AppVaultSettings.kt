@@ -11,7 +11,6 @@ import dev.jarviis.obsidian.model.VaultDescriptor
 class AppVaultState : BaseState() {
     /** Persisted as a list of "name::path" entries to survive IDE restarts. */
     var vaultEntries by list<String>()
-    var crossVaultSearch by property(false)
 }
 
 /**
@@ -27,10 +26,6 @@ class AppVaultSettings : SimplePersistentStateComponent<AppVaultState>(AppVaultS
         set(value) {
             state.vaultEntries = value.map { "${it.name}::${it.rootPathString}" }.toMutableList()
         }
-
-    var crossVaultSearch: Boolean
-        get() = state.crossVaultSearch
-        set(value) { state.crossVaultSearch = value }
 
     private fun parseEntry(entry: String): VaultDescriptor? {
         val idx = entry.indexOf("::")

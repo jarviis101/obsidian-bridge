@@ -7,7 +7,6 @@ import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.CollectionListModel
 import com.intellij.ui.ToolbarDecorator
-import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBList
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
@@ -25,14 +24,11 @@ class AppSettingsConfigurable : Configurable {
         selectionMode = ListSelectionModel.SINGLE_SELECTION
         cellRenderer = VaultListCellRenderer()
     }
-    private val crossVaultCheck = JBCheckBox(ObsidianBundle.message("settings.cross.vault.search"))
 
     override fun getDisplayName(): String = ObsidianBundle.message("settings.app.display.name")
 
     override fun createComponent(): JComponent {
-        val settings = AppVaultSettings.getInstance()
-        listModel.replaceAll(settings.vaults)
-        crossVaultCheck.isSelected = settings.crossVaultSearch
+        listModel.replaceAll(AppVaultSettings.getInstance().vaults)
 
         val decorator = ToolbarDecorator.createDecorator(vaultList)
             .setAddAction { addVault() }
@@ -44,27 +40,20 @@ class AppSettingsConfigurable : Configurable {
             group(ObsidianBundle.message("settings.vaults.label")) {
                 row { cell(decorator).align(AlignX.FILL).resizableColumn() }
             }
-            row { cell(crossVaultCheck) }
         }.also { panel = it }
     }
 
-    override fun isModified(): Boolean {
-        val settings = AppVaultSettings.getInstance()
-        return listModel.items != settings.vaults || crossVaultCheck.isSelected != settings.crossVaultSearch
-    }
+    override fun isModified(): Boolean =
+        listModel.items != AppVaultSettings.getInstance().vaults
 
     override fun apply() {
         val settings = AppVaultSettings.getInstance()
         settings.vaults = listModel.items
-        settings.crossVaultSearch = crossVaultCheck.isSelected
-        // Sync VaultManager with the updated vault list
         service<VaultManager>().replaceVaults(settings.vaults)
     }
 
     override fun reset() {
-        val settings = AppVaultSettings.getInstance()
-        listModel.replaceAll(settings.vaults)
-        crossVaultCheck.isSelected = settings.crossVaultSearch
+        listModel.replaceAll(AppVaultSettings.getInstance().vaults)
     }
 
     private fun addVault() {
@@ -83,7 +72,7 @@ class AppSettingsConfigurable : Configurable {
         }
         if (!vaultDescriptor.hasObsidianConfig) {
             val proceed = Messages.showYesNoDialog(
-                "The selected folder has no .obsidian/ directory. It will work as a plain Markdown vault (no daily notes config, no template config). Continue?",
+                "The selected folder has no .obsidian/ directory. It will work as a plain Markdown vault. Continue?",
                 ObsidianBundle.message("settings.app.display.name"),
                 Messages.getQuestionIcon()
             )

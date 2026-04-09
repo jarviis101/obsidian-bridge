@@ -90,8 +90,6 @@ class VaultManager {
 
     // ── Index access ──────────────────────────────────────────────────────────
 
-    fun indexFor(vaultName: String): VaultIndex? = indices[vaultName]
-
     fun allIndices(): List<VaultIndex> = indices.values.toList()
 
     /** Find the vault index that owns the given absolute [path]. */

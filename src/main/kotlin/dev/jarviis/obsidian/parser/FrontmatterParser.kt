@@ -3,18 +3,8 @@ package dev.jarviis.obsidian.parser
 import com.intellij.openapi.diagnostic.logger
 import dev.jarviis.obsidian.model.Frontmatter
 import org.yaml.snakeyaml.Yaml
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 private val LOG = logger<FrontmatterParser>()
-
-private val DATE_FORMATS = listOf(
-    DateTimeFormatter.ISO_LOCAL_DATE,           // 2024-01-15
-    DateTimeFormatter.ofPattern("dd/MM/yyyy"),
-    DateTimeFormatter.ofPattern("MM/dd/yyyy"),
-    DateTimeFormatter.ofPattern("yyyy.MM.dd"),
-)
 
 /**
  * Stateless YAML frontmatter parser.
@@ -44,27 +34,11 @@ object FrontmatterParser {
         return try {
             @Suppress("UNCHECKED_CAST")
             val map = Yaml().load<Map<String, Any>>(raw) ?: return Frontmatter.EMPTY
-            buildFrontmatter(map)
+            Frontmatter(aliases = parseStringList(map["aliases"]))
         } catch (e: Exception) {
             LOG.warn("Failed to parse frontmatter: ${e.message}")
             Frontmatter.EMPTY
         }
-    }
-
-    private fun buildFrontmatter(map: Map<String, Any>): Frontmatter {
-        val tags = parseTags(map["tags"])
-        val aliases = parseStringList(map["aliases"])
-        val title = map["title"]?.toString()
-        val date = parseDate(map["date"] ?: map["created"])
-        val extra = map.filterKeys { it !in setOf("tags", "aliases", "title", "date", "created") }
-        return Frontmatter(tags = tags, aliases = aliases, date = date, title = title, extra = extra)
-    }
-
-    private fun parseTags(value: Any?): List<String> = when (value) {
-        null -> emptyList()
-        is List<*> -> value.filterIsInstance<String>().map { it.trimStart('#').lowercase() }
-        is String -> value.split(Regex("\\s+")).filter { it.isNotBlank() }.map { it.trimStart('#').lowercase() }
-        else -> emptyList()
     }
 
     private fun parseStringList(value: Any?): List<String> = when (value) {
@@ -72,18 +46,5 @@ object FrontmatterParser {
         is List<*> -> value.filterIsInstance<String>()
         is String -> listOf(value)
         else -> emptyList()
-    }
-
-    private fun parseDate(value: Any?): LocalDate? {
-        if (value == null) return null
-        // SnakeYAML may parse ISO dates directly into java.util.Date
-        if (value is java.util.Date) {
-            return value.toInstant().atZone(java.time.ZoneOffset.UTC).toLocalDate()
-        }
-        val str = value.toString()
-        for (fmt in DATE_FORMATS) {
-            try { return LocalDate.parse(str, fmt) } catch (_: DateTimeParseException) {}
-        }
-        return null
     }
 }

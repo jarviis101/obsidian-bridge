@@ -30,8 +30,6 @@ class VaultIndex(val descriptor: VaultDescriptor) {
 
     fun allNotes(): List<ObsidianNote> = lock.read { notesByPath.values.toList() }
 
-    fun noteCount(): Int = lock.read { notesByPath.size }
-
     fun findByPath(path: Path): ObsidianNote? = lock.read { notesByPath[path] }
 
     /**
@@ -62,10 +60,6 @@ class VaultIndex(val descriptor: VaultDescriptor) {
             }
             else -> candidates.minByOrNull { it.relativePath.nameCount }
         }
-    }
-
-    fun backlinksFor(note: ObsidianNote): List<ObsidianNote> = lock.read {
-        backlinks[note.path]?.toList() ?: emptyList()
     }
 
     fun backlinksFor(path: Path): List<ObsidianNote> = lock.read {

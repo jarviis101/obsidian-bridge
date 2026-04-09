@@ -10,11 +10,5 @@ object ObsidianIcons {
     val Note = IconLoader.getIcon("/icons/obsidian_note.svg", ObsidianIcons::class.java)
 
     @JvmField
-    val Tag = IconLoader.getIcon("/icons/obsidian_tag.svg", ObsidianIcons::class.java)
-
-    @JvmField
-    val Backlink = IconLoader.getIcon("/icons/obsidian_backlink.svg", ObsidianIcons::class.java)
-
-    @JvmField
     val Bridge = IconLoader.getIcon("/icons/obsidian_bridge.svg", ObsidianIcons::class.java)
 }
