@@ -36,13 +36,12 @@ class WikiLinkCompletionContributor : CompletionContributor() {
 
         val manager = service<VaultManager>()
         val contextPath = parameters.originalFile.virtualFile?.path?.let { java.nio.file.Paths.get(it) }
+        val project = parameters.position.project
+        val index = manager.indexForProject(project) ?: return  // no vault configured for this project
 
-        val notes = if (prefix.isBlank()) {
-            manager.allIndices().flatMap { it.allNotes() }
-        } else {
-            val q = prefix.lowercase()
-            manager.allIndices().flatMap { it.allNotes() }.filter { it.name.lowercase().contains(q) }
-        }
+        val allNotes = index.allNotes()
+        val notes = if (prefix.isBlank()) allNotes
+                    else { val q = prefix.lowercase(); allNotes.filter { it.name.lowercase().contains(q) } }
 
         for (note in notes) {
             val element = LookupElementBuilder.create(note.name)

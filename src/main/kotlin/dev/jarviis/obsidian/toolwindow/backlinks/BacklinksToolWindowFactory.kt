@@ -111,7 +111,15 @@ class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(Bor
 
         val manager = service<VaultManager>()
         val path = Paths.get(file.path)
-        val index = manager.indexForPath(path) ?: run {
+        val projectIndex = manager.indexForProject(project)
+
+        // If a vault is configured for the project, use it only when the file belongs to it.
+        // If no vault is configured, fall back to whichever vault owns the file.
+        val index = if (projectIndex != null) {
+            projectIndex.takeIf { path.startsWith(it.descriptor.rootPath) }
+        } else {
+            manager.indexForPath(path)
+        } ?: run {
             outgoingLabel.text = "Links"
             backlinksLabel.text = "Backlinks"
             outgoingModel.removeAll()

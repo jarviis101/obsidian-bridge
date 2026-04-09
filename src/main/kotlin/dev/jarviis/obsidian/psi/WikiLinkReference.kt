@@ -23,7 +23,7 @@ class WikiLinkReference(
         val manager = service<VaultManager>()
         val contextPath = element.containingFile?.virtualFile?.path
             ?.let { java.nio.file.Paths.get(it) }
-        val note = manager.resolve(target, contextPath) ?: return null
+        val note = manager.resolveInProject(target, element.project, contextPath) ?: return null
         val vFile = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
             .findFileByNioFile(note.path) ?: return null
         return PsiManager.getInstance(element.project).findFile(vFile)

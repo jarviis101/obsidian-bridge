@@ -3,10 +3,12 @@ package dev.jarviis.obsidian.vault
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.util.concurrency.AppExecutorUtil
 import dev.jarviis.obsidian.model.ObsidianNote
 import dev.jarviis.obsidian.model.VaultDescriptor
+import dev.jarviis.obsidian.settings.ProjectVaultSettings
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -99,14 +101,30 @@ class VaultManager {
     fun isInsideRegisteredVault(path: Path): Boolean =
         descriptors.any { path.startsWith(it.rootPath) }
 
-    // ── Convenience query API (searches all vaults) ───────────────────────────
+    /**
+     * Returns the single vault index associated with [project], or null if none is configured.
+     * Falls back to searching all indices when no project vault is selected.
+     */
+    fun indexForProject(project: Project): VaultIndex? {
+        val name = ProjectVaultSettings.getInstance(project).activeVaultName ?: return null
+        return indices[name]
+    }
 
+    // ── Convenience query API ─────────────────────────────────────────────────
+
+    /** Resolve within all vaults — used as fallback and by non-project contexts. */
     fun resolve(target: String, contextPath: Path? = null): ObsidianNote? {
         val normalizedTarget = target.removeSuffix(".md").replace('\\', '/')
         val contextIndex = contextPath?.let { indexForPath(it) }
-        // Prefer the vault containing the context file
         return contextIndex?.resolve(normalizedTarget, contextPath)
             ?: indices.values.firstNotNullOfOrNull { it.resolve(normalizedTarget) }
+    }
+
+    /** Resolve within the vault associated with [project]. Returns null if no vault is configured for the project. */
+    fun resolveInProject(target: String, project: Project, contextPath: Path? = null): ObsidianNote? {
+        val index = indexForProject(project) ?: return null
+        val normalizedTarget = target.removeSuffix(".md").replace('\\', '/')
+        return index.resolve(normalizedTarget, contextPath)
     }
 
     // ── Listeners ─────────────────────────────────────────────────────────────
