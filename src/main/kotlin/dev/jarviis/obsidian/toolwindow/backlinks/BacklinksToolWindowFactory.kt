@@ -3,17 +3,13 @@ package dev.jarviis.obsidian.toolwindow.backlinks
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
-import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.wm.ToolWindow
-import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.CollectionListModel
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.content.ContentFactory
 import dev.jarviis.obsidian.model.ObsidianNote
 import dev.jarviis.obsidian.vault.VaultManager
 import java.awt.BorderLayout
@@ -21,37 +17,6 @@ import java.nio.file.Paths
 import javax.swing.BoxLayout
 import javax.swing.ListSelectionModel
 import javax.swing.SwingUtilities
-
-@Suppress("UnstableApiUsage")
-class BacklinksToolWindowFactory : ToolWindowFactory, DumbAware {
-
-    override fun shouldBeAvailable(project: Project): Boolean = true
-
-    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        val panel = BacklinksPanel(project)
-        val content = ContentFactory.getInstance().createContent(panel, null, false)
-        toolWindow.contentManager.addContent(content)
-
-        project.messageBus.connect().subscribe(
-            FileEditorManagerListener.FILE_EDITOR_MANAGER,
-            object : FileEditorManagerListener {
-                override fun selectionChanged(event: com.intellij.openapi.fileEditor.FileEditorManagerEvent) {
-                    panel.updateFor(event.newFile)
-                }
-                override fun fileOpened(source: FileEditorManager, file: VirtualFile) {
-                    panel.updateFor(file)
-                }
-            }
-        )
-
-        service<VaultManager>().addChangeListener {
-            SwingUtilities.invokeLater {
-                panel.updateFor(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
-            }
-        }
-        panel.updateFor(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
-    }
-}
 
 class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(BorderLayout()) {
 
@@ -106,6 +71,29 @@ class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(Bor
             border = null
             horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         }, BorderLayout.CENTER)
+
+        // Update panel when the active editor changes
+        project.messageBus.connect().subscribe(
+            FileEditorManagerListener.FILE_EDITOR_MANAGER,
+            object : FileEditorManagerListener {
+                override fun selectionChanged(event: com.intellij.openapi.fileEditor.FileEditorManagerEvent) {
+                    updateFor(event.newFile)
+                }
+                override fun fileOpened(source: FileEditorManager, file: VirtualFile) {
+                    updateFor(file)
+                }
+            }
+        )
+
+        // Reload when vault index changes
+        service<VaultManager>().addChangeListener {
+            SwingUtilities.invokeLater {
+                updateFor(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
+            }
+        }
+
+        // Show current file immediately
+        updateFor(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
     }
 
     fun updateFor(file: VirtualFile?) {

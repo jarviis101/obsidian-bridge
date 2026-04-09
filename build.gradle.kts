@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.jarviis.obsidian"
-version = "1.0.4"
+version = "1.0.5"
 
 kotlin {
     jvmToolchain(21)
@@ -38,6 +38,11 @@ intellijPlatform {
         changeNotes = """
             Initial version
         """.trimIndent()
+    }
+    pluginVerification {
+        ides {
+            local("/Users/kharchenko.o/Applications/PhpStorm.app")
+        }
     }
 }
 
