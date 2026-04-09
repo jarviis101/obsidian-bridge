@@ -52,6 +52,13 @@
             implementationClass="dev.jarviis.obsidian.psi.WikiLinkCompletionContributor"
             order="first"/>
 
+        <lang.foldingBuilder
+            language="Markdown"
+            implementationClass="dev.jarviis.obsidian.psi.WikiLinkFoldingBuilder"/>
+
+        <editorFactoryListener
+            implementation="dev.jarviis.obsidian.psi.WikiLinkEditorFactoryListener"/>
+
         <!-- ==================== Tool Windows ==================== -->
         <toolWindow
             id="Obsidian Backlinks"
