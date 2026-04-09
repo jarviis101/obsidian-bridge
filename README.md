@@ -5,23 +5,28 @@ A JetBrains plugin that brings your Obsidian vault into the IDE — navigate, li
 ## Features
 
 - **Wiki-link rendering** — `[[Note|Alias]]` folds inline to its display name; click to open, Cmd+Click to edit
-- **Wiki-link autocompletion** — type `[[` to get note name suggestions from your vault
+- **Wiki-link autocompletion** — type `[[` to get note name suggestions from the active vault
 - **Backlinks panel** — shows outgoing links (this note → others) and incoming backlinks (others → this note)
 - **Code ↔ Notes bridge** — gutter icons on `TODO/FIXME: [[Note]]` comments link directly to vault notes
 - **Open in Obsidian** — jump from any note to the Obsidian app in one click
-- **Multi-vault support** — register multiple vaults, all indexed and searchable
+- **Per-project vault** — each project is linked to exactly one vault; auto-detected on first open, configurable via Settings
 
-Compatible with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.
+## Vault Setup
+
+**Automatic** — when you open a project, the plugin scans the project directory for a `.obsidian/` folder and links it automatically. No manual configuration needed.
+
+**Manual** — go to **Settings → Tools → Obsidian Lens** to register vaults globally, then **Settings → Tools → Obsidian Lens → Obsidian Vault** to select which vault is active for the current project.
 
 ## Stack
 
-| Layer         | Technology                                              |
-|---------------|---------------------------------------------------------|
-| Language      | Kotlin 2.2.x + Java (factory layer), JVM 21             |
-| Build         | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2       |
-| Platform      | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+)       |
-| Serialization | kotlinx.serialization (JSON for graph data)             |
-| YAML          | SnakeYAML (on IntelliJ classpath — no extra dep needed) |
+| Layer    | Technology                                              |
+|----------|---------------------------------------------------------|
+| Language | Kotlin 2.2.x + Java (factory layer), JVM 21             |
+| Build    | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2       |
+| Platform | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+)       |
+| YAML     | SnakeYAML (on IntelliJ classpath — no extra dep needed) |
+
+Compatible with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.
 
 ## Project Structure
 
@@ -38,6 +43,7 @@ src/
 │   │   ├── bridge/                 # TODO/FIXME gutter icon line markers
 │   │   ├── toolwindow/backlinks/   # Backlinks panel (Swing)
 │   │   ├── actions/                # OpenInObsidianAction
+│   │   ├── startup/                # Auto-detection of vault on project open
 │   │   └── settings/               # App/project settings (PersistentStateComponent)
 │   └── resources/
 │       ├── META-INF/plugin.xml
@@ -62,8 +68,3 @@ src/
 ```
 
 Pre-configured Run/Debug configurations are in `.run/`.
-
-## Configuration
-
-After installing, go to **Settings → Tools → Obsidian Lens** to register vault paths.  
-Per-project vault override: **Settings → Tools → Obsidian Lens → Obsidian Vault**.

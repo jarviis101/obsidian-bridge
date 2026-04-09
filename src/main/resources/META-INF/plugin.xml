@@ -10,12 +10,17 @@
         <b>Features</b>
         <ul>
             <li><b>Wiki-link rendering</b> — <code>[[Note|Alias]]</code> folds inline to its display name; click to open, Cmd+Click to edit</li>
-            <li><b>Wiki-link autocompletion</b> — type <code>[[</code> to get note name suggestions from your vault</li>
+            <li><b>Wiki-link autocompletion</b> — type <code>[[</code> to get note name suggestions from the active vault</li>
             <li><b>Backlinks panel</b> — shows outgoing links (this note → others) and incoming backlinks (others → this note)</li>
             <li><b>Code ↔ Notes bridge</b> — gutter icons on <code>TODO/FIXME: [[Note]]</code> comments link directly to vault notes</li>
             <li><b>Open in Obsidian</b> — jump from any note to the Obsidian app in one click</li>
-            <li><b>Multi-vault support</b> — register multiple vaults, all indexed and searchable</li>
+            <li><b>Per-project vault</b> — each project is linked to exactly one vault; auto-detected on first open, configurable via Settings</li>
         </ul>
+        <br/>
+        <b>Setup</b><br/>
+        Zero configuration needed — when you open a project the plugin automatically detects any <code>.obsidian/</code>
+        folder inside it and links the vault. To override or set up manually go to
+        <b>Settings → Tools → Obsidian Lens</b>.<br/>
         <br/>
         Works with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.<br/>
     ]]></description>
