@@ -15,13 +15,13 @@ Compatible with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider
 
 ## Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Language | Kotlin 2.2.x + Java (factory layer), JVM 21 |
-| Build | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2 |
-| Platform | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+) |
-| Serialization | kotlinx.serialization (JSON for graph data) |
-| YAML | SnakeYAML (on IntelliJ classpath — no extra dep needed) |
+| Layer         | Technology                                              |
+|---------------|---------------------------------------------------------|
+| Language      | Kotlin 2.2.x + Java (factory layer), JVM 21             |
+| Build         | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2       |
+| Platform      | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+)       |
+| Serialization | kotlinx.serialization (JSON for graph data)             |
+| YAML          | SnakeYAML (on IntelliJ classpath — no extra dep needed) |
 
 ## Project Structure
 
@@ -62,26 +62,6 @@ src/
 ```
 
 Pre-configured Run/Debug configurations are in `.run/`.
-
-## Deployment
-
-### Manual upload
-
-1. Build the ZIP: `./gradlew buildPlugin -x buildSearchableOptions`
-2. Output: `build/distributions/obsidian-lens-<version>.zip`
-3. Upload at [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/upload)
-
-### Automated publish
-
-```bash
-./gradlew publishPlugin
-```
-
-Requires `PUBLISH_TOKEN` set in `gradle.properties` or as an environment variable.
-
-### Versioning
-
-Bump `version` in `build.gradle.kts` before each release.
 
 ## Configuration
 
