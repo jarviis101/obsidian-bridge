@@ -1,118 +1,89 @@
-# IntelliJ Platform Plugin Template
+# Obsidian Lens
 
-[![Twitter Follow](https://img.shields.io/badge/follow-%40JBPlatform-1DA1F2?logo=twitter)](https://twitter.com/JBPlatform)
-[![Developers Forum](https://img.shields.io/badge/JetBrains%20Platform-Join-blue)][jb:forum]
+A JetBrains plugin that brings your Obsidian vault into the IDE — navigate, link, and explore notes without leaving the editor.
 
-## Plugin template structure
+## Features
 
-A generated project contains the following content structure:
+- **Wiki-link rendering** — `[[Note|Alias]]` folds inline to its display name; click to open, Cmd+Click to edit
+- **Wiki-link autocompletion** — type `[[` to get note name suggestions from your vault
+- **Backlinks panel** — shows outgoing links (this note → others) and incoming backlinks (others → this note)
+- **Code ↔ Notes bridge** — gutter icons on `TODO/FIXME: [[Note]]` comments link directly to vault notes
+- **Open in Obsidian** — jump from any note to the Obsidian app in one click
+- **Multi-vault support** — register multiple vaults, all indexed and searchable
+
+Compatible with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.
+
+## Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Language | Kotlin 2.2.x + Java (factory layer), JVM 21 |
+| Build | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2 |
+| Platform | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+) |
+| Serialization | kotlinx.serialization (JSON for graph data) |
+| YAML | SnakeYAML (on IntelliJ classpath — no extra dep needed) |
+
+## Project Structure
 
 ```
-.
-├── .run/                   Predefined Run/Debug Configurations
-├── build/                  Output build directory
-├── gradle
-│   ├── wrapper/            Gradle Wrapper
-│   ├── libs.versions.toml  Version catalog
-├── src                     Plugin sources
-│   ├── main
-│   │   ├── kotlin/         Kotlin production sources
-│   │   └── resources/      Resources - plugin.xml, icons, messages
-├── .gitignore              Git ignoring rules
-├── build.gradle.kts        Gradle build configuration
-├── gradle.properties       Gradle configuration properties
-├── gradlew                 *nix Gradle Wrapper script
-├── gradlew.bat             Windows Gradle Wrapper script
-├── README.md               README
-└── settings.gradle.kts     Gradle project settings
+src/
+├── main/
+│   ├── java/dev/jarviis/obsidian/
+│   │   └── toolwindow/backlinks/   # Java factory (avoids Kotlin bridge warnings)
+│   ├── kotlin/dev/jarviis/obsidian/
+│   │   ├── model/                  # Pure data classes (ObsidianNote, WikiLink, Frontmatter)
+│   │   ├── parser/                 # Stateless parsers (WikiLinkParser, FrontmatterParser)
+│   │   ├── vault/                  # VaultManager, VaultIndex, VaultScanner, VaultWatcher
+│   │   ├── psi/                    # Wiki-link references, completion, folding
+│   │   ├── bridge/                 # TODO/FIXME gutter icon line markers
+│   │   ├── toolwindow/backlinks/   # Backlinks panel (Swing)
+│   │   ├── actions/                # OpenInObsidianAction
+│   │   └── settings/               # App/project settings (PersistentStateComponent)
+│   └── resources/
+│       ├── META-INF/plugin.xml
+│       ├── messages/ObsidianBundle.properties
+│       └── icons/
 ```
 
-In addition to the configuration files, the most crucial part is the `src` directory, which contains our implementation
-and the manifest for our plugin – [plugin.xml][file:plugin.xml].
+## Development
 
-> [!NOTE]
-> To use Java in your plugin, create the `/src/main/java` directory.
+```bash
+# Run sandboxed IDE with plugin loaded
+./gradlew runIde
 
-## Plugin configuration file
+# Build plugin ZIP
+./gradlew buildPlugin -x buildSearchableOptions
 
-The plugin configuration file is a [plugin.xml][file:plugin.xml] file located in the `src/main/resources/META-INF`
-directory.
-It provides general information about the plugin, its dependencies, extensions, and listeners.
+# Run tests
+./gradlew test
 
-You can read more about this file in the [Plugin Configuration File][docs:plugin.xml] section of our documentation.
+# Check compatibility against target IDEs
+./gradlew verifyPlugin
+```
 
-If you're still not quite sure what this is all about, read our
-introduction: [What is the IntelliJ Platform?][docs:intro]
+Pre-configured Run/Debug configurations are in `.run/`.
 
-$H$H Predefined Run/Debug configurations
+## Deployment
 
-Within the default project structure, there is a `.run` directory provided containing predefined *Run/Debug
-configurations* that expose corresponding Gradle tasks:
+### Manual upload
 
-| Configuration name | Description                                                                                                                                                                         |
-|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Run Plugin         | Runs [`:runIde`][gh:intellij-platform-gradle-plugin-runIde] IntelliJ Platform Gradle Plugin task. Use the *Debug* icon for plugin debugging.                                        |
-| Run Tests          | Runs [`:test`][gradle:lifecycle-tasks] Gradle task.                                                                                                                                 |
-| Run Verifications  | Runs [`:verifyPlugin`][gh:intellij-platform-gradle-plugin-verifyPlugin] IntelliJ Platform Gradle Plugin task to check the plugin compatibility against the specified IntelliJ IDEs. |
+1. Build the ZIP: `./gradlew buildPlugin -x buildSearchableOptions`
+2. Output: `build/distributions/obsidian-lens-<version>.zip`
+3. Upload at [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/upload)
 
-> [!NOTE]
-> You can find the logs from the running task in the `idea.log` tab.
+### Automated publish
 
-## Publishing the plugin
+```bash
+./gradlew publishPlugin
+```
 
-> [!TIP]
-> Make sure to follow all guidelines listed in [Publishing a Plugin][docs:publishing] to follow all recommended and
-> required steps.
+Requires `PUBLISH_TOKEN` set in `gradle.properties` or as an environment variable.
 
-Releasing a plugin to [JetBrains Marketplace](https://plugins.jetbrains.com) is a straightforward operation that uses
-the `publishPlugin` Gradle task provided by
-the [intellij-platform-gradle-plugin][gh:intellij-platform-gradle-plugin-docs].
+### Versioning
 
-You can also upload the plugin to the [JetBrains Plugin Repository](https://plugins.jetbrains.com/plugin/upload)
-manually via UI.
+Bump `version` in `build.gradle.kts` before each release.
 
-## Useful links
+## Configuration
 
-- [IntelliJ Platform SDK Plugin SDK][docs]
-- [IntelliJ Platform Gradle Plugin Documentation][gh:intellij-platform-gradle-plugin-docs]
-- [IntelliJ Platform Explorer][jb:ipe]
-- [JetBrains Marketplace Quality Guidelines][jb:quality-guidelines]
-- [IntelliJ Platform UI Guidelines][jb:ui-guidelines]
-- [JetBrains Marketplace Paid Plugins][jb:paid-plugins]
-- [IntelliJ SDK Code Samples][gh:code-samples]
-
-[docs]: https://plugins.jetbrains.com/docs/intellij
-
-[docs:intro]: https://plugins.jetbrains.com/docs/intellij/intellij-platform.html?from=IJPluginTemplate
-
-[docs:plugin.xml]: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html?from=IJPluginTemplate
-
-[docs:publishing]: https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate
-
-[file:plugin.xml]: ./src/main/resources/META-INF/plugin.xml
-
-[gh:code-samples]: https://github.com/JetBrains/intellij-sdk-code-samples
-
-[gh:intellij-platform-gradle-plugin]: https://github.com/JetBrains/intellij-platform-gradle-plugin
-
-[gh:intellij-platform-gradle-plugin-docs]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
-
-[gh:intellij-platform-gradle-plugin-runIde]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-tasks.html#runIde
-
-[gh:intellij-platform-gradle-plugin-verifyPlugin]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-tasks.html#verifyPlugin
-
-[gradle:lifecycle-tasks]: https://docs.gradle.org/current/userguide/java_plugin.html#lifecycle_tasks
-
-[jb:github]: https://github.com/JetBrains/.github/blob/main/profile/README.md
-
-[jb:forum]: https://platform.jetbrains.com/
-
-[jb:quality-guidelines]: https://plugins.jetbrains.com/docs/marketplace/quality-guidelines.html
-
-[jb:paid-plugins]: https://plugins.jetbrains.com/docs/marketplace/paid-plugins-marketplace.html
-
-[jb:quality-guidelines]: https://plugins.jetbrains.com/docs/marketplace/quality-guidelines.html
-
-[jb:ipe]: https://jb.gg/ipe
-
-[jb:ui-guidelines]: https://jetbrains.github.io/ui
+After installing, go to **Settings → Tools → Obsidian Lens** to register vault paths.  
+Per-project vault override: **Settings → Tools → Obsidian Lens → Obsidian Vault**.
