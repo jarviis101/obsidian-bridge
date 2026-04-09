@@ -16,7 +16,16 @@
             <li><b>Open in Obsidian</b> — jump from any note to the Obsidian app in one click</li>
             <li><b>Multi-vault support</b> — register multiple vaults, all indexed and searchable</li>
         </ul>
-        Works with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.
+        Works with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.<br/>
+        <br/>
+        <b>Getting Started</b>
+        <ol>
+            <li>Open <b>Settings → Tools → Obsidian Lens</b> and click <b>Add Vault</b></li>
+            <li>Select your Obsidian vault folder (the one containing <code>.obsidian/</code>)</li>
+            <li>Open any <code>.md</code> file — wiki-links render inline, autocompletion activates on <code>[[</code></li>
+            <li>Open the <b>Obsidian Backlinks</b> panel (right sidebar) to explore links and backlinks</li>
+            <li>Use <b>Tools → Obsidian → Open in Obsidian</b> to jump to the current note in the Obsidian app</li>
+        </ol>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
