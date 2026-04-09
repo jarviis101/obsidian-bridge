@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #1e1e2e; font-family: -apple-system, sans-serif; }
+
+  #canvas-wrap { position: absolute; inset: 0; }
+  svg { width: 100%; height: 100%; display: block; }
+
+  .link {
+    stroke: #585b70;
+    stroke-opacity: 0.45;
+    stroke-width: 1px;
+    shape-rendering: optimizeSpeed;
+    transition: stroke-opacity 0.12s, stroke 0.12s;
+  }
+  .link.hl  { stroke: #a78bfa; stroke-opacity: 0.9; stroke-width: 1.5px; }
+  .link.dim { stroke-opacity: 0.07; }
+
+  .node circle {
+    fill: #7c3aed; stroke: #a78bfa; stroke-width: 1.5px; cursor: pointer;
+    transition: fill 0.12s, opacity 0.12s;
+  }
+  .node circle:hover { fill: #a78bfa; }
+  .node.sel  circle { fill: #f5c2e7; stroke: #f5c2e7; }
+  .node.nbr  circle { fill: #89b4fa; stroke: #89b4fa; }
+  .node.dim  circle { opacity: 0.12; }
+  .node.dim  text   { opacity: 0.12; }
+  .node text {
+    fill: #cdd6f4; font-size: 11px;
+    pointer-events: none; user-select: none;
+  }
+
+  #status { position: fixed; top: 8px; left: 8px; color: #6c7086; font-size: 11px; pointer-events: none; }
+  #hint   { position: fixed; bottom: 8px; left: 8px; color: #45475a; font-size: 10px; pointer-events: none; }
+  #info   {
+    position: fixed; top: 8px; right: 8px;
+    color: #cdd6f4; font-size: 11px;
+    background: #313244cc; padding: 4px 8px; border-radius: 4px;
+    display: none; pointer-events: none; max-width: 260px;
+  }
+</style>
+</head>
+<body>
+<div id="status">Waiting for data…</div>
+<div id="hint">Scroll to zoom · Drag to pan · Click to select · Double-click to open</div>
+<div id="info"></div>
+<div id="canvas-wrap"><svg id="graph"></svg></div>
+<script src="d3.min.js"></script>
+<script>
+(function () {
+  const svg    = d3.select("#graph");
+  const svgEl  = svg.node();
+  const status = document.getElementById("status");
+  const info   = document.getElementById("info");
+  let sim = null, frameId = null, selId = null;
+
+  const root = svg.append("g").attr("class", "root");
+
+  // ── Zoom ──────────────────────────────────────────────────────────────────
+  // D3 zoom handles pan + programmatic zoom; wheel is intercepted manually below.
+  const zoom = d3.zoom()
+    .scaleExtent([0.05, 8])
+    .filter(e => e.type !== "wheel")   // D3 must NOT handle wheel — we do it
+    .on("zoom", ({ transform }) => root.attr("transform", transform));
+
+  svg.call(zoom).on("dblclick.zoom", null);
+
+  // Intercept wheel in capture phase so D3 never sees it.
+  // Throttle to one step per 90 ms to neutralise JCEF's event storm.
+  let lastWheel = 0;
+  svgEl.addEventListener("wheel", e => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const now = Date.now();
+    if (now - lastWheel < 90) return;
+    lastWheel = now;
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const p = d3.pointer(e, svgEl);
+    zoom.scaleBy(svg, factor, p);
+  }, { passive: false, capture: true });
+
+  // Deselect on background click
+  svg.on("click", e => { if (e.target === svgEl) clearSel(); });
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  window.updateGraph = function (nodes, links) {
+    if (!nodes || nodes.length === 0) { status.textContent = "No notes indexed yet."; return; }
+
+    if (sim) sim.stop();
+    if (frameId) { cancelAnimationFrame(frameId); frameId = null; }
+    selId = null; info.style.display = "none";
+    root.selectAll("*").remove();
+
+    // Deduplicate edges
+    const seen = new Set();
+    const edges = links.filter(l => {
+      const k = l.source < l.target ? l.source + l.target : l.target + l.source;
+      return l.source !== l.target && seen.size !== seen.add(k).size;
+    });
+
+    // Degree → radius
+    const deg = {};
+    edges.forEach(({ source: s, target: t }) => { deg[s] = (deg[s]||0)+1; deg[t] = (deg[t]||0)+1; });
+    nodes.forEach(n => { n.r = 4 + Math.sqrt(deg[n.id] || 0) * 1.5; });
+
+    const linkSel = root.append("g").selectAll("line").data(edges).join("line").attr("class", "link");
+
+    let clickTimer = null;
+
+    const nodeSel = root.append("g")
+      .selectAll("g").data(nodes, d => d.id).join("g").attr("class", "node")
+      .call(
+        d3.drag()
+          .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.2).restart(); d.fx = d.x; d.fy = d.y; })
+          .on("drag",  (e, d) => { d.fx = e.x; d.fy = e.y; })
+          .on("end",   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+      )
+      // Use 300 ms delay to distinguish single-click (select) from double-click (open)
+      .on("click", (e, d) => {
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+          selId === d.id ? clearSel() : applySel(d, edges, nodeSel, linkSel, deg);
+        }, 280);
+      })
+      .on("dblclick", (e, d) => {
+        clearTimeout(clickTimer);
+        if (window.__bridge) window.__bridge.click(d.name);
+      });
+
+    nodeSel.append("circle").attr("r", d => d.r);
+    nodeSel.append("text").attr("x", d => d.r + 3).attr("dy", "0.35em").text(d => d.name);
+
+    const W = window.innerWidth, H = window.innerHeight;
+    sim = d3.forceSimulation(nodes)
+      .alphaDecay(0.03).velocityDecay(0.4)
+      .force("link",    d3.forceLink(edges).id(d => d.id).distance(90).strength(0.6))
+      .force("charge",  d3.forceManyBody().strength(-220).distanceMax(400))
+      .force("center",  d3.forceCenter(W/2, H/2).strength(0.05))
+      .force("collide", d3.forceCollide(d => d.r + 4).iterations(2))
+      .on("tick", tick)
+      .on("end",  () => { status.textContent = `${nodes.length} notes · ${edges.length} links (settled)`; });
+
+    status.textContent = `${nodes.length} notes · ${edges.length} links`;
+
+    function tick() {
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        linkSel.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+               .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+        frameId = null;
+      });
+    }
+
+    sim.on("end.fit", () => { sim.on("end.fit", null); fitView(nodes); });
+  };
+
+  function applySel(d, edges, nodeSel, linkSel, deg) {
+    selId = d.id;
+    const nbrs = new Set(), hlEdges = new Set();
+    edges.forEach((e, i) => {
+      const s = typeof e.source === "object" ? e.source.id : e.source;
+      const t = typeof e.target === "object" ? e.target.id : e.target;
+      if (s === d.id || t === d.id) { nbrs.add(s); nbrs.add(t); hlEdges.add(i); }
+    });
+    nbrs.delete(d.id);
+    nodeSel.classed("sel", n => n.id === d.id)
+           .classed("nbr", n => nbrs.has(n.id))
+           .classed("dim", n => n.id !== d.id && !nbrs.has(n.id));
+    linkSel.classed("hl",  (_, i) => hlEdges.has(i))
+           .classed("dim", (_, i) => !hlEdges.has(i));
+    const c = deg[d.id] || 0;
+    info.textContent = `${d.name}  ·  ${c} link${c !== 1 ? "s" : ""}`;
+    info.style.display = "block";
+  }
+
+  function clearSel() {
+    selId = null;
+    root.selectAll(".node").classed("sel nbr dim", false);
+    root.selectAll(".link").classed("hl dim", false);
+    info.style.display = "none";
+  }
+
+  function fitView(nodes) {
+    if (!nodes.length) return;
+    const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const W = window.innerWidth, H = window.innerHeight;
+    const scale = Math.min(0.9, 0.9 / Math.max((maxX - minX) / W, (maxY - minY) / H));
+    const tx = (W - scale * (minX + maxX)) / 2;
+    const ty = (H - scale * (minY + maxY)) / 2;
+    svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+  }
+})();
+</script>
+</body>
+</html>

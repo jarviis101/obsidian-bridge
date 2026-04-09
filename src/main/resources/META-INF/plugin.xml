@@ -1,0 +1,125 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>dev.jarviis.obsidian.obsidian-bridge</id>
+    <name>Obsidian Bridge</name>
+    <vendor url="https://github.com/jarviis">Jarviis</vendor>
+
+    <description><![CDATA[
+        Integrate your Obsidian vault directly into JetBrains IDEs.<br/>
+        <ul>
+            <li>Navigate and autocomplete <code>[[wiki-links]]</code></li>
+            <li>Backlinks panel — see every note that references the current file</li>
+            <li>Tag tree navigation with hierarchical tag support</li>
+            <li>Vault-wide full-text search</li>
+            <li>YAML frontmatter parsing and display</li>
+            <li>Interactive graph view (D3.js)</li>
+            <li>Code ↔ Notes bridging via <code>TODO/FIXME: [[Note]]</code> comments</li>
+            <li>Daily notes integration and templates</li>
+            <li>Multi-vault support</li>
+        </ul>
+        Works with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <resource-bundle>messages.ObsidianBundle</resource-bundle>
+
+    <extensions defaultExtensionNs="com.intellij">
+
+        <!-- ==================== Startup ==================== -->
+        <postStartupActivity implementation="dev.jarviis.obsidian.startup.ObsidianStartupActivity"/>
+
+        <!-- ==================== Services ==================== -->
+        <applicationService
+            serviceInterface="dev.jarviis.obsidian.settings.AppVaultSettings"
+            serviceImplementation="dev.jarviis.obsidian.settings.AppVaultSettings"/>
+
+        <applicationService
+            serviceInterface="dev.jarviis.obsidian.vault.VaultManager"
+            serviceImplementation="dev.jarviis.obsidian.vault.VaultManager"/>
+
+        <projectService
+            serviceInterface="dev.jarviis.obsidian.settings.ProjectVaultSettings"
+            serviceImplementation="dev.jarviis.obsidian.settings.ProjectVaultSettings"/>
+
+        <!-- ==================== PSI / References ==================== -->
+        <psi.referenceContributor
+            language="Markdown"
+            implementation="dev.jarviis.obsidian.psi.WikiLinkReferenceContributor"/>
+
+        <completion.contributor
+            language="Markdown"
+            implementationClass="dev.jarviis.obsidian.psi.WikiLinkCompletionContributor"
+            order="first"/>
+
+        <!-- ==================== Tool Windows ==================== -->
+        <toolWindow
+            id="Obsidian Backlinks"
+            anchor="right"
+            secondary="true"
+            factoryClass="dev.jarviis.obsidian.toolwindow.backlinks.BacklinksToolWindowFactory"
+            icon="dev.jarviis.obsidian.ObsidianIcons.ToolWindow"/>
+
+
+        <!--
+        <toolWindow
+            id="Obsidian Graph"
+            anchor="right"
+            factoryClass="dev.jarviis.obsidian.toolwindow.graph.GraphToolWindowFactory"
+            icon="dev.jarviis.obsidian.ObsidianIcons.ToolWindow"/>
+        -->
+
+        <!-- ==================== Editor / Line Markers ==================== -->
+        <lineMarkerProvider
+            language="JAVA"
+            implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
+        <lineMarkerProvider
+            language="kotlin"
+            implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
+        <lineMarkerProvider
+            language="Python"
+            implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
+        <lineMarkerProvider
+            language="JavaScript"
+            implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
+        <lineMarkerProvider
+            language="TypeScript"
+            implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
+        <lineMarkerProvider
+            language="go"
+            implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
+
+        <!-- ==================== Settings ==================== -->
+        <applicationConfigurable
+            parentId="tools"
+            id="dev.jarviis.obsidian.settings.AppSettingsConfigurable"
+            displayName="Obsidian Bridge"
+            instance="dev.jarviis.obsidian.settings.AppSettingsConfigurable"/>
+
+        <projectConfigurable
+            parentId="dev.jarviis.obsidian.settings.AppSettingsConfigurable"
+            id="dev.jarviis.obsidian.settings.ProjectSettingsConfigurable"
+            displayName="Obsidian Vault"
+            instance="dev.jarviis.obsidian.settings.ProjectSettingsConfigurable"/>
+
+    </extensions>
+
+    <actions>
+        <group id="ObsidianBridge.ActionGroup" text="Obsidian" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+
+            <action
+                id="ObsidianBridge.DailyNote"
+                class="dev.jarviis.obsidian.actions.DailyNoteAction"
+                text="Open Today's Daily Note"
+                description="Open or create today's daily note in the vault"/>
+
+            <action
+                id="ObsidianBridge.OpenInObsidian"
+                class="dev.jarviis.obsidian.actions.OpenInObsidianAction"
+                text="Open in Obsidian"
+                description="Open the current note in the Obsidian application"/>
+        </group>
+    </actions>
+
+</idea-plugin>
