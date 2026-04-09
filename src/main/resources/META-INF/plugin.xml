@@ -65,6 +65,7 @@
             id="Obsidian Backlinks"
             anchor="right"
             secondary="true"
+            doNotActivateOnStart="true"
             factoryClass="dev.jarviis.obsidian.toolwindow.backlinks.BacklinksToolWindowFactory"
             icon="dev.jarviis.obsidian.ObsidianIcons.ToolWindow"/>
 

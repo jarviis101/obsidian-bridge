@@ -21,7 +21,10 @@ import kotlinx.serialization.json.put
 import java.awt.BorderLayout
 import javax.swing.SwingUtilities
 
+@Suppress("UnstableApiUsage")
 class GraphToolWindowFactory : ToolWindowFactory, DumbAware {
+
+    override fun shouldBeAvailable(project: Project): Boolean = true
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val component = if (JBCefApp.isSupported()) {

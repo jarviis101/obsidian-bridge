@@ -22,7 +22,10 @@ import javax.swing.BoxLayout
 import javax.swing.ListSelectionModel
 import javax.swing.SwingUtilities
 
+@Suppress("UnstableApiUsage")
 class BacklinksToolWindowFactory : ToolWindowFactory, DumbAware {
+
+    override fun shouldBeAvailable(project: Project): Boolean = true
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val panel = BacklinksPanel(project)
