@@ -36,7 +36,12 @@ intellijPlatform {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
         }
         changeNotes = """
-            Initial version
+            <ul>
+                <li>Vault setup is now per-project — each project maintains its own independent vault, not shared with other projects.</li>
+                <li>Auto-detection on project open: the plugin scans the project directory for an Obsidian vault automatically.</li>
+                <li>If auto-detection fails, open <b>Settings → Tools → Obsidian Lens</b> and use <b>+</b> to add a vault manually or <b>Scan project for vault</b> to re-run detection.</li>
+                <li>The vault list holds exactly one vault: <b>+</b> is enabled only when the list is empty, <b>−</b> only when a vault is present.</li>
+            </ul>
         """.trimIndent()
     }
     pluginVerification {
