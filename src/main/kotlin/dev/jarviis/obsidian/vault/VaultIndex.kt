@@ -56,10 +56,19 @@ class VaultIndex(val descriptor: VaultDescriptor) {
             contextPath != null -> candidates.minByOrNull { note ->
                 val sameFolder = note.path.parent == contextPath.parent
                 val pathLen = note.relativePath.nameCount
-                if (sameFolder) -1000 + pathLen else pathLen
+                val commonPrefix = commonPrefixLength(note.path, contextPath)
+                if (sameFolder) -1000 + pathLen else -commonPrefix * 10 + pathLen
             }
             else -> candidates.minByOrNull { it.relativePath.nameCount }
         }
+    }
+
+    /** Number of leading path components shared between two absolute paths. */
+    private fun commonPrefixLength(a: Path, b: Path): Int {
+        var count = 0
+        val limit = minOf(a.nameCount, b.nameCount)
+        while (count < limit && a.getName(count) == b.getName(count)) count++
+        return count
     }
 
     fun backlinksFor(path: Path): List<ObsidianNote> = lock.read {
