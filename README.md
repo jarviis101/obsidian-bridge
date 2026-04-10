@@ -7,6 +7,7 @@ A JetBrains plugin that brings your Obsidian vault into the IDE — navigate, li
 - **Wiki-link rendering** — `[[Note|Alias]]` folds inline to its display name; click to open, Cmd+Click to edit
 - **Wiki-link autocompletion** — type `[[` to get note name suggestions from the active vault
 - **Backlinks panel** — shows outgoing links (this note → others) and incoming backlinks (others → this note)
+- **Graph view** — interactive force-directed graph of all notes and their wiki-link connections; zoom, pan, drag nodes
 - **Code ↔ Notes bridge** — gutter icons on `TODO/FIXME: [[Note]]` comments link directly to vault notes
 - **Open in Obsidian** — jump from any note to the Obsidian app in one click
 - **Per-project vault** — each project maintains its own independent vault. Auto-detected on first open; if not found, add or scan manually via Settings
@@ -28,6 +29,7 @@ Each project stores its own vault independently — vault lists are never shared
 | Language | Kotlin 2.2.x + Java (factory layer), JVM 21             |
 | Build    | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2       |
 | Platform | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+)       |
+| Graph UI | Pure Swing/Java2D — Fruchterman–Reingold force layout   |
 | YAML     | SnakeYAML (on IntelliJ classpath — no extra dep needed) |
 
 Compatible with IntelliJ IDEA, WebStorm, PyCharm, CLion, GoLand, PhpStorm, Rider, RubyMine, and Android Studio.

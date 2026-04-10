@@ -28,7 +28,7 @@ Pre-configured Run/Debug configurations are in `.run/`.
 | Language | Kotlin 2.2.x + Java (factory layer), JVM 21 |
 | Build | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2 |
 | Platform | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+) |
-| Graph UI | JCEF (`JBCefBrowser`) + D3.js (bundled, no CDN) — **disabled, code preserved** |
+| Graph UI | Pure Swing/Java2D — Fruchterman–Reingold force layout, no JCEF/D3.js required |
 | YAML | SnakeYAML (on IntelliJ classpath — no extra dep needed) |
 | Date/Time | `java.time` only |
 
@@ -50,8 +50,8 @@ model/ → parser/ → vault/ → psi/ / bridge/ / toolwindow/ / actions/ / sett
 - **`vault/`** — `VaultManager` (app service), `VaultIndex` (per-vault, thread-safe), `VaultScanner`, `VaultWatcher`, `VaultDetector` (`detectVaultIn()` — shared vault discovery logic).
 - **`psi/`** — `WikiLinkReferenceContributor`, `WikiLinkReference`, `WikiLinkCompletionContributor`. References resolve via `VaultIndex`, never live FS scans.
 - **`bridge/`** — `TodoBridgeLineMarker` (gutter icons on TODO/FIXME lines linking to notes).
-- **`toolwindow/backlinks/`** — the only active tool window. Shows two sections: **Links** (outgoing — notes this file links to) and **Backlinks** (incoming — notes that link to this file). Both lists are clickable.
-- **`toolwindow/graph/`** — JCEF + D3.js graph view. Code exists but the tool window is **commented out** in `plugin.xml`. Re-enable when ready.
+- **`toolwindow/backlinks/`** — shows two sections: **Links** (outgoing — notes this file links to) and **Backlinks** (incoming — notes that link to this file). Both lists are clickable.
+- **`toolwindow/graph/`** — pure Swing/Java2D graph view (`GraphPanel.kt`). Force-directed layout with portrait orientation, label-aware node separation, drag-to-push collision resolution, and per-project layout persistence via `PropertiesComponent`.
 - **`settings/`** — `AppVaultSettings` / `ProjectVaultSettings` (`PersistentStateComponent`), `ProjectSettingsConfigurable` (per-project vault list with **+** / **−** / **Scan project for vault**). `AppSettingsConfigurable` exists but is no longer registered in `plugin.xml`.
 - **`startup/`** — `ObsidianStartupActivity` (`ProjectActivity`): on project open, re-registers a saved vault or runs auto-detection via `detectVaultIn()`.
 - **`actions/`** — `DailyNoteAction`, `OpenInObsidianAction`.
@@ -64,13 +64,13 @@ model/ → parser/ → vault/ → psi/ / bridge/ / toolwindow/ / actions/ / sett
 - Wiki-link `\|` in Markdown table cells is unescaped before parsing: `replace("\\|", "|")` in `WikiLinkParser`.
 - Relative links (`./foo`, `../foo`) are resolved using `contextPath.parent.resolve(target).normalize()` with `.md` extension fallback.
 - **Vault setup has two tiers**: (1) `ObsidianStartupActivity` auto-detects on project open using `detectVaultIn()`; (2) if that fails, the user opens **Settings → Tools → Obsidian Lens** (`ProjectSettingsConfigurable`) and either clicks **+** (file chooser) or **Scan project for vault** (re-runs `detectVaultIn()`). Each project stores its own vault list in `ProjectVaultSettings`; the first entry is the active vault. Lists are never shared between projects.
-- Graph view checks `JBCefApp.isSupported()` and shows a fallback message if JCEF is unavailable.
+- Graph view is pure Swing/Java2D — no JCEF dependency. `VaultManager.indices` is keyed by `rootPathString` (not vault name) so two projects with same-named vaults get independent indices.
 - Obsidian URI (`obsidian://open?vault=...&file=...`) used for "Open in Obsidian" actions via `Desktop.browse()`.
 - All user-visible strings go through `ObsidianBundle`.
 
 ## Active Tool Windows (plugin.xml)
 
-Only `Obsidian Backlinks` is registered. Tags, Search, and Graph tool windows are commented out.
+`Obsidian Backlinks` and `Obsidian Graph` are registered. Tags and Search tool windows are commented out.
 
 ## plugin.xml Extension Point Categories
 

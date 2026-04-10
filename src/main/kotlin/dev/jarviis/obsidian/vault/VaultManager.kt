@@ -27,7 +27,7 @@ private val LOG = logger<VaultManager>()
 @Service(Service.Level.APP)
 class VaultManager {
 
-    private val indices = ConcurrentHashMap<String, VaultIndex>()     // vaultName → index
+    private val indices = ConcurrentHashMap<String, VaultIndex>()     // rootPathString → index
     private val descriptors = CopyOnWriteArrayList<VaultDescriptor>()
     private val listeners = CopyOnWriteArrayList<VaultChangeListener>()
 
@@ -41,33 +41,30 @@ class VaultManager {
     fun registeredVaults(): List<VaultDescriptor> = descriptors.toList()
 
     fun registerVault(descriptor: VaultDescriptor) {
-        if (descriptors.none { it.name == descriptor.name }) {
+        if (descriptors.none { it.rootPathString == descriptor.rootPathString }) {
             descriptors += descriptor
             rebuildIndexAsync(descriptor)
         }
     }
 
     fun removeVault(name: String) {
+        val path = descriptors.firstOrNull { it.name == name }?.rootPathString
         descriptors.removeIf { it.name == name }
-        indices.remove(name)
+        if (path != null) indices.remove(path)
         notifyListeners()
     }
 
     fun replaceVaults(newDescriptors: List<VaultDescriptor>) {
-        val existing = descriptors.map { it.name }.toSet()
-        val incoming = newDescriptors.map { it.name }.toSet()
+        val existingPaths = descriptors.map { it.rootPathString }.toSet()
+        val incomingPaths = newDescriptors.map { it.rootPathString }.toSet()
 
         // Remove vaults no longer in the list
-        (existing - incoming).forEach { removeVault(it) }
+        descriptors.filter { it.rootPathString !in incomingPaths }
+            .forEach { removeVault(it.name) }
 
         // Add new vaults
         for (d in newDescriptors) {
-            if (d.name !in existing) registerVault(d)
-            else if (descriptors.first { it.name == d.name }.rootPathString != d.rootPathString) {
-                // Path changed — re-register
-                descriptors.replaceAll { if (it.name == d.name) d else it }
-                rebuildIndexAsync(d)
-            }
+            if (d.rootPathString !in existingPaths) registerVault(d)
         }
     }
 
@@ -87,8 +84,8 @@ class VaultManager {
      * Falls back to searching all indices when no project vault is selected.
      */
     fun indexForProject(project: Project): VaultIndex? {
-        val name = ProjectVaultSettings.getInstance(project).vaults.firstOrNull()?.name ?: return null
-        return indices[name]
+        val path = ProjectVaultSettings.getInstance(project).vaults.firstOrNull()?.rootPathString ?: return null
+        return indices[path]
     }
 
     // ── Convenience query API ─────────────────────────────────────────────────
@@ -131,7 +128,7 @@ class VaultManager {
                 val notes = VaultScanner.scanAll(descriptor)
                 val index = VaultIndex(descriptor)
                 index.rebuild(notes)
-                indices[descriptor.name] = index
+                indices[descriptor.rootPathString] = index
                 LOG.info("ObsidianBridge: vault '${descriptor.name}' indexed — ${notes.size} note(s)")
                 notifyListeners()
             } catch (e: Exception) {
