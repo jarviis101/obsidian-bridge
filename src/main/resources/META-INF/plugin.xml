@@ -70,13 +70,13 @@
             icon="dev.jarviis.obsidian.ObsidianIcons.ToolWindow"/>
 
 
-        <!--
         <toolWindow
             id="Obsidian Graph"
             anchor="right"
+            secondary="true"
+            doNotActivateOnStart="true"
             factoryClass="dev.jarviis.obsidian.toolwindow.graph.GraphToolWindowFactory"
             icon="dev.jarviis.obsidian.ObsidianIcons.ToolWindow"/>
-        -->
 
         <!-- ==================== Editor / Line Markers ==================== -->
         <lineMarkerProvider
