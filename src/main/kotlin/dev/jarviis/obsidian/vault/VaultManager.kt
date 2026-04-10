@@ -5,10 +5,10 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFileManager
+import dev.jarviis.obsidian.settings.ProjectVaultSettings
 import com.intellij.util.concurrency.AppExecutorUtil
 import dev.jarviis.obsidian.model.ObsidianNote
 import dev.jarviis.obsidian.model.VaultDescriptor
-import dev.jarviis.obsidian.settings.ProjectVaultSettings
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -33,26 +33,7 @@ class VaultManager {
 
     init {
         VirtualFileManager.getInstance().addAsyncFileListener(VaultWatcher(this), ApplicationManager.getApplication())
-        // Restore vaults persisted from a previous session
-        loadFromSettings()
-    }
-
-    private fun loadFromSettings() {
-        val saved = try {
-            dev.jarviis.obsidian.settings.AppVaultSettings.getInstance().vaults
-        } catch (e: Exception) {
-            LOG.error("Failed to load vault settings", e)
-            emptyList()
-        }
-        LOG.info("ObsidianBridge: loadFromSettings — found ${saved.size} saved vault(s): ${saved.map { it.name }}")
-        for (descriptor in saved) {
-            if (descriptor.isValid()) {
-                LOG.info("ObsidianBridge: registering vault '${descriptor.name}' at ${descriptor.rootPathString}")
-                registerVault(descriptor)
-            } else {
-                LOG.warn("ObsidianBridge: skipping invalid vault '${descriptor.name}' at ${descriptor.rootPathString}")
-            }
-        }
+        // Vaults are registered per-project by ObsidianStartupActivity on project open.
     }
 
     // ── Vault registration ────────────────────────────────────────────────────
@@ -106,7 +87,7 @@ class VaultManager {
      * Falls back to searching all indices when no project vault is selected.
      */
     fun indexForProject(project: Project): VaultIndex? {
-        val name = ProjectVaultSettings.getInstance(project).activeVaultName ?: return null
+        val name = ProjectVaultSettings.getInstance(project).vaults.firstOrNull()?.name ?: return null
         return indices[name]
     }
 

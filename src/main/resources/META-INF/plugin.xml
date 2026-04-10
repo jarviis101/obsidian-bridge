@@ -99,16 +99,10 @@
             implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
 
         <!-- ==================== Settings ==================== -->
-        <applicationConfigurable
-            parentId="tools"
-            id="dev.jarviis.obsidian.settings.AppSettingsConfigurable"
-            displayName="Obsidian Lens"
-            instance="dev.jarviis.obsidian.settings.AppSettingsConfigurable"/>
-
         <projectConfigurable
-            parentId="dev.jarviis.obsidian.settings.AppSettingsConfigurable"
+            parentId="tools"
             id="dev.jarviis.obsidian.settings.ProjectSettingsConfigurable"
-            displayName="Obsidian Vault"
+            displayName="Obsidian Lens"
             instance="dev.jarviis.obsidian.settings.ProjectSettingsConfigurable"/>
 
     </extensions>

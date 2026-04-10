@@ -25,7 +25,7 @@ Pre-configured Run/Debug configurations are in `.run/`.
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Kotlin 2.2.x, JVM 21 |
+| Language | Kotlin 2.2.x + Java (factory layer), JVM 21 |
 | Build | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2 |
 | Platform | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+) |
 | Graph UI | JCEF (`JBCefBrowser`) + D3.js (bundled, no CDN) — **disabled, code preserved** |
@@ -47,12 +47,13 @@ model/ → parser/ → vault/ → psi/ / bridge/ / toolwindow/ / actions/ / sett
 
 - **`model/`** — pure data classes (`ObsidianNote`, `WikiLink`, `Frontmatter`). No IntelliJ or IO dependencies.
 - **`parser/`** — stateless: `WikiLinkParser`, `FrontmatterParser`, `TemplateEngine`. Input strings, output model objects.
-- **`vault/`** — `VaultManager` (app service), `VaultIndex` (per-vault, thread-safe), `VaultScanner`, `VaultWatcher`.
+- **`vault/`** — `VaultManager` (app service), `VaultIndex` (per-vault, thread-safe), `VaultScanner`, `VaultWatcher`, `VaultDetector` (`detectVaultIn()` — shared vault discovery logic).
 - **`psi/`** — `WikiLinkReferenceContributor`, `WikiLinkReference`, `WikiLinkCompletionContributor`. References resolve via `VaultIndex`, never live FS scans.
 - **`bridge/`** — `TodoBridgeLineMarker` (gutter icons on TODO/FIXME lines linking to notes).
 - **`toolwindow/backlinks/`** — the only active tool window. Shows two sections: **Links** (outgoing — notes this file links to) and **Backlinks** (incoming — notes that link to this file). Both lists are clickable.
 - **`toolwindow/graph/`** — JCEF + D3.js graph view. Code exists but the tool window is **commented out** in `plugin.xml`. Re-enable when ready.
-- **`settings/`** — `AppVaultSettings` / `ProjectVaultSettings` (`PersistentStateComponent`), `SettingsConfigurable`.
+- **`settings/`** — `AppVaultSettings` / `ProjectVaultSettings` (`PersistentStateComponent`), `ProjectSettingsConfigurable` (per-project vault list with **+** / **−** / **Scan project for vault**). `AppSettingsConfigurable` exists but is no longer registered in `plugin.xml`.
+- **`startup/`** — `ObsidianStartupActivity` (`ProjectActivity`): on project open, re-registers a saved vault or runs auto-detection via `detectVaultIn()`.
 - **`actions/`** — `DailyNoteAction`, `OpenInObsidianAction`.
 
 ### Key Design Decisions
@@ -62,6 +63,7 @@ model/ → parser/ → vault/ → psi/ / bridge/ / toolwindow/ / actions/ / sett
 - **All path suffixes are indexed** in `allKeys()`. A note at `modules/platform/platform.md` is findable by `platform`, `platform/platform`, and `modules/platform/platform`. This matches Obsidian's resolution of path-qualified links like `[[platform/platform]]`.
 - Wiki-link `\|` in Markdown table cells is unescaped before parsing: `replace("\\|", "|")` in `WikiLinkParser`.
 - Relative links (`./foo`, `../foo`) are resolved using `contextPath.parent.resolve(target).normalize()` with `.md` extension fallback.
+- **Vault setup has two tiers**: (1) `ObsidianStartupActivity` auto-detects on project open using `detectVaultIn()`; (2) if that fails, the user opens **Settings → Tools → Obsidian Lens** (`ProjectSettingsConfigurable`) and either clicks **+** (file chooser) or **Scan project for vault** (re-runs `detectVaultIn()`). Each project stores its own vault list in `ProjectVaultSettings`; the first entry is the active vault. Lists are never shared between projects.
 - Graph view checks `JBCefApp.isSupported()` and shows a fallback message if JCEF is unavailable.
 - Obsidian URI (`obsidian://open?vault=...&file=...`) used for "Open in Obsidian" actions via `Desktop.browse()`.
 - All user-visible strings go through `ObsidianBundle`.

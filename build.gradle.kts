@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.jarviis.obsidian"
-version = "1.0.8"
+version = "1.0.9"
 
 kotlin {
     jvmToolchain(21)

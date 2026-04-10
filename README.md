@@ -9,13 +9,17 @@ A JetBrains plugin that brings your Obsidian vault into the IDE — navigate, li
 - **Backlinks panel** — shows outgoing links (this note → others) and incoming backlinks (others → this note)
 - **Code ↔ Notes bridge** — gutter icons on `TODO/FIXME: [[Note]]` comments link directly to vault notes
 - **Open in Obsidian** — jump from any note to the Obsidian app in one click
-- **Per-project vault** — each project is linked to exactly one vault; auto-detected on first open, configurable via Settings
+- **Per-project vault** — each project maintains its own independent vault. Auto-detected on first open; if not found, add or scan manually via Settings
 
 ## Vault Setup
 
-**Automatic** — when you open a project, the plugin scans the project directory for a `.obsidian/` folder and links it automatically. No manual configuration needed.
+**Automatic** — on project open the plugin scans the project directory for a `.obsidian/` folder and links it automatically. No manual configuration needed.
 
-**Manual** — go to **Settings → Tools → Obsidian Lens** to register vaults globally, then **Settings → Tools → Obsidian Lens → Obsidian Vault** to select which vault is active for the current project.
+**Manual** — if auto-detection fails, open **Settings → Tools → Obsidian Lens** and either:
+- Click **+** to pick a vault folder manually via the file chooser.
+- Click **Scan project for vault** to re-run auto-detection on the project directory.
+
+Each project stores its own vault independently — vault lists are never shared between projects. The list holds exactly one vault at a time; use **−** to remove it before adding a different one.
 
 ## Stack
 
