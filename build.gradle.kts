@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.jarviis.obsidian"
-version = "1.1.2"
+version = "1.1.3"
 
 kotlin {
     jvmToolchain(21)
@@ -37,7 +37,8 @@ intellijPlatform {
         }
         changeNotes = """
             <ul>
-                <li>Internal refactoring — no user-facing changes.</li>
+                <li><b>Graph sync</b> — the graph now automatically highlights the node corresponding to the currently open file. Switching between files updates the highlight in real time.</li>
+                <li>Clicking the graph background no longer clears the highlight — it returns focus to the open file's node.</li>
             </ul>
         """.trimIndent()
     }

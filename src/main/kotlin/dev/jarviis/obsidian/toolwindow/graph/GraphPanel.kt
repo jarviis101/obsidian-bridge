@@ -3,10 +3,13 @@ package dev.jarviis.obsidian.toolwindow.graph
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.FileEditorManagerEvent
+import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.JBColor
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.intellij.util.messages.MessageBusConnection
 import dev.jarviis.obsidian.vault.VaultManager
 import java.awt.*
 import java.awt.event.*
@@ -61,6 +64,7 @@ class GraphPanel(private val project: Project) : JPanel() {
 
     private val simRunning = AtomicBoolean(false)
     private val paintTimer = Timer(16) { repaint() }
+    private var busConnection: MessageBusConnection? = null
 
     private val cBg      = JBColor(Color(250, 250, 252), Color(43, 45, 48))
     private val cNode    = JBColor(Color(97, 175, 239),  Color(86, 156, 214))
@@ -78,14 +82,28 @@ class GraphPanel(private val project: Project) : JPanel() {
 
     override fun addNotify() {
         super.addNotify()
+        busConnection = project.messageBus.connect()
+        busConnection?.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, object : FileEditorManagerListener {
+            override fun selectionChanged(event: FileEditorManagerEvent) {
+                val path = event.newFile?.path
+                SwingUtilities.invokeLater { selectByPath(path) }
+            }
+        })
         loadGraph()
     }
 
     override fun removeNotify() {
+        busConnection?.disconnect()
+        busConnection = null
         simRunning.set(false)
         paintTimer.stop()
         if (settled) saveLayout()
         super.removeNotify()
+    }
+
+    private fun selectByPath(path: String?) {
+        selected = if (path != null) nodes.firstOrNull { it.id == path } else null
+        repaint()
     }
 
     fun loadGraph() {
@@ -154,9 +172,11 @@ class GraphPanel(private val project: Project) : JPanel() {
         nodes    = nodeMap.values.toList()
         edges    = edgeList
         settled  = false
-        selected = null
         hovered  = null
         scale    = 1.0; panX = 0.0; panY = 0.0
+
+        val currentPath = FileEditorManager.getInstance(project).selectedFiles.firstOrNull()?.path
+        selected = if (currentPath != null) nodes.firstOrNull { it.id == currentPath } else null
 
         if (restoreLayout()) {
             settled = true
@@ -589,8 +609,9 @@ class GraphPanel(private val project: Project) : JPanel() {
                     selected = hit
                     repaint()
                 } else {
-                    dragBg   = true
-                    selected = null
+                    dragBg = true
+                    val currentPath = FileEditorManager.getInstance(project).selectedFiles.firstOrNull()?.path
+                    selected = if (currentPath != null) nodes.firstOrNull { it.id == currentPath } else null
                     repaint()
                 }
             }
