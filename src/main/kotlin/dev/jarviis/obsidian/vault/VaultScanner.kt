@@ -1,7 +1,6 @@
 package dev.jarviis.obsidian.vault
 
 import com.intellij.openapi.diagnostic.logger
-import dev.jarviis.obsidian.model.Frontmatter
 import dev.jarviis.obsidian.model.ObsidianNote
 import dev.jarviis.obsidian.model.VaultDescriptor
 import dev.jarviis.obsidian.parser.FrontmatterParser
@@ -58,7 +57,6 @@ object VaultScanner {
 
     private fun isIgnored(path: Path, vaultRoot: Path): Boolean {
         val relative = vaultRoot.relativize(path)
-        // Always skip the .obsidian config directory
         return relative.firstOrNull()?.toString() == ".obsidian"
     }
 }

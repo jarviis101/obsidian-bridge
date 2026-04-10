@@ -23,21 +23,18 @@ class WikiLinkCompletionContributor : CompletionContributor() {
         val text = parameters.originalFile.text ?: return
         val offset = parameters.offset
 
-        // Check if we are inside a [[ ... ]] context
         val openBracket = text.lastIndexOf("[[", offset - 1)
         if (openBracket < 0) return
         val closeBracket = text.indexOf("]]", openBracket)
-        if (closeBracket in openBracket until offset) return  // already closed before caret
+        if (closeBracket in openBracket until offset) return
 
-        // Extract typed prefix (after [[)
         val prefix = text.substring(openBracket + 2, offset)
             .substringBefore('#')
             .substringBefore('|')
 
         val manager = service<VaultManager>()
-        val contextPath = parameters.originalFile.virtualFile?.path?.let { java.nio.file.Paths.get(it) }
         val project = parameters.position.project
-        val index = manager.indexForProject(project) ?: return  // no vault configured for this project
+        val index = manager.indexForProject(project) ?: return
 
         val allNotes = index.allNotes()
         val notes = if (prefix.isBlank()) allNotes

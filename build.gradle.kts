@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.jarviis.obsidian"
-version = "1.1.1"
+version = "1.1.2"
 
 kotlin {
     jvmToolchain(21)
@@ -37,7 +37,7 @@ intellijPlatform {
         }
         changeNotes = """
             <ul>
-                <li><b>Graph fix</b> — notes with duplicate names in different directories (e.g. <code>business/module.md</code> and <code>design/module.md</code>) now resolve correctly and appear connected in the graph.</li>
+                <li>Internal refactoring — no user-facing changes.</li>
             </ul>
         """.trimIndent()
     }

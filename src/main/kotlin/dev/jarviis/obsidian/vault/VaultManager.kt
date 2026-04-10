@@ -27,16 +27,13 @@ private val LOG = logger<VaultManager>()
 @Service(Service.Level.APP)
 class VaultManager {
 
-    private val indices = ConcurrentHashMap<String, VaultIndex>()     // rootPathString → index
+    private val indices = ConcurrentHashMap<String, VaultIndex>()
     private val descriptors = CopyOnWriteArrayList<VaultDescriptor>()
     private val listeners = CopyOnWriteArrayList<VaultChangeListener>()
 
     init {
         VirtualFileManager.getInstance().addAsyncFileListener(VaultWatcher(this), ApplicationManager.getApplication())
-        // Vaults are registered per-project by ObsidianStartupActivity on project open.
     }
-
-    // ── Vault registration ────────────────────────────────────────────────────
 
     fun registeredVaults(): List<VaultDescriptor> = descriptors.toList()
 
@@ -58,39 +55,25 @@ class VaultManager {
         val existingPaths = descriptors.map { it.rootPathString }.toSet()
         val incomingPaths = newDescriptors.map { it.rootPathString }.toSet()
 
-        // Remove vaults no longer in the list
         descriptors.filter { it.rootPathString !in incomingPaths }
             .forEach { removeVault(it.name) }
 
-        // Add new vaults
         for (d in newDescriptors) {
             if (d.rootPathString !in existingPaths) registerVault(d)
         }
     }
 
-    // ── Index access ──────────────────────────────────────────────────────────
-
-    fun allIndices(): List<VaultIndex> = indices.values.toList()
-
-    /** Find the vault index that owns the given absolute [path]. */
     fun indexForPath(path: Path): VaultIndex? =
         indices.values.firstOrNull { path.startsWith(it.descriptor.rootPath) }
 
     fun isInsideRegisteredVault(path: Path): Boolean =
         descriptors.any { path.startsWith(it.rootPath) }
 
-    /**
-     * Returns the single vault index associated with [project], or null if none is configured.
-     * Falls back to searching all indices when no project vault is selected.
-     */
     fun indexForProject(project: Project): VaultIndex? {
         val path = ProjectVaultSettings.getInstance(project).vaults.firstOrNull()?.rootPathString ?: return null
         return indices[path]
     }
 
-    // ── Convenience query API ─────────────────────────────────────────────────
-
-    /** Resolve within all vaults — used as fallback and by non-project contexts. */
     fun resolve(target: String, contextPath: Path? = null): ObsidianNote? {
         val normalizedTarget = target.removeSuffix(".md").replace('\\', '/')
         val contextIndex = contextPath?.let { indexForPath(it) }
@@ -98,28 +81,19 @@ class VaultManager {
             ?: indices.values.firstNotNullOfOrNull { it.resolve(normalizedTarget) }
     }
 
-    /** Resolve within the vault associated with [project]. Returns null if no vault is configured for the project. */
     fun resolveInProject(target: String, project: Project, contextPath: Path? = null): ObsidianNote? {
         val index = indexForProject(project) ?: return null
         val normalizedTarget = target.removeSuffix(".md").replace('\\', '/')
         return index.resolve(normalizedTarget, contextPath)
     }
 
-    // ── Listeners ─────────────────────────────────────────────────────────────
-
     fun addChangeListener(listener: VaultChangeListener) {
         listeners += listener
-    }
-
-    fun removeChangeListener(listener: VaultChangeListener) {
-        listeners -= listener
     }
 
     private fun notifyListeners() {
         listeners.forEach { it.onVaultChanged() }
     }
-
-    // ── Internal ──────────────────────────────────────────────────────────────
 
     private fun rebuildIndexAsync(descriptor: VaultDescriptor) {
         AppExecutorUtil.getAppExecutorService().submit {

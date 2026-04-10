@@ -17,30 +17,17 @@ class VaultIndex(val descriptor: VaultDescriptor) {
 
     private val lock = ReentrantReadWriteLock()
 
-    // path → note
     private val notesByPath = mutableMapOf<Path, ObsidianNote>()
-
-    // lowercased name/alias → list of notes (multiple notes can share an alias)
     private val notesByName = mutableMapOf<String, MutableList<ObsidianNote>>()
-
-    // note path → set of notes that link TO it (backlinks)
     private val backlinks = mutableMapOf<Path, MutableSet<ObsidianNote>>()
-
-    // ── Read API ──────────────────────────────────────────────────────────────
 
     fun allNotes(): List<ObsidianNote> = lock.read { notesByPath.values.toList() }
 
     fun findByPath(path: Path): ObsidianNote? = lock.read { notesByPath[path] }
 
-    /**
-     * Resolve a wiki-link target using Obsidian's rules:
-     * 1. Relative path (./foo, ../foo) — resolved against the context file's directory
-     * 2. Name / vault-relative path lookup — case-insensitive, prefer same-folder
-     */
     fun resolve(target: String, contextPath: Path? = null): ObsidianNote? = lock.read {
         val normalized = target.removeSuffix(".md").replace('\\', '/')
 
-        // 1. Relative path resolution
         if (contextPath != null && (normalized.startsWith("./") || normalized.startsWith("../"))) {
             val contextDir = contextPath.parent ?: return@read null
             val resolved = contextDir.resolve(normalized).normalize()
@@ -48,22 +35,20 @@ class VaultIndex(val descriptor: VaultDescriptor) {
             notesByPath[contextDir.resolve("$normalized.md").normalize()]?.let { return@read it }
         }
 
-        // 2. Name / vault-relative path lookup
         val key = normalized.lowercase()
         val candidates = notesByName[key] ?: return@read null
         when {
             candidates.size == 1 -> candidates.first()
             contextPath != null -> candidates.minByOrNull { note ->
                 val sameFolder = note.path.parent == contextPath.parent
-                val pathLen = note.relativePath.nameCount
                 val commonPrefix = commonPrefixLength(note.path, contextPath)
+                val pathLen = note.relativePath.nameCount
                 if (sameFolder) -1000 + pathLen else -commonPrefix * 10 + pathLen
             }
             else -> candidates.minByOrNull { it.relativePath.nameCount }
         }
     }
 
-    /** Number of leading path components shared between two absolute paths. */
     private fun commonPrefixLength(a: Path, b: Path): Int {
         var count = 0
         val limit = minOf(a.nameCount, b.nameCount)
@@ -75,21 +60,16 @@ class VaultIndex(val descriptor: VaultDescriptor) {
         backlinks[path]?.toList() ?: emptyList()
     }
 
-    // ── Write API (called from VaultManager background thread) ───────────────
-
-    /** Fully replace the index with a fresh scan result. */
     fun rebuild(notes: List<ObsidianNote>) = lock.write {
         notesByPath.clear()
         notesByName.clear()
         backlinks.clear()
-        // Pass 1: register all notes so resolve() works for every note
         for (note in notes) {
             notesByPath[note.path] = note
             for (key in note.allKeys()) {
                 notesByName.getOrPut(key) { mutableListOf() }.add(note)
             }
         }
-        // Pass 2: build backlinks now that all targets are resolvable
         var resolved = 0
         var unresolved = 0
         val unresolvedSamples = mutableListOf<String>()
@@ -110,19 +90,15 @@ class VaultIndex(val descriptor: VaultDescriptor) {
         if (unresolvedSamples.isNotEmpty()) LOG.info("ObsidianBridge: unresolved samples: $unresolvedSamples")
     }
 
-    /** Add or update a single note (called when a file changes). */
     fun upsert(note: ObsidianNote) = lock.write {
         removeFromIndices(note.path)
         indexNote(note)
     }
 
-    /** Remove a note from the index (called when a file is deleted). */
     fun remove(path: Path) = lock.write {
         removeFromIndices(path)
         backlinks.remove(path)
     }
-
-    // ── Internal ──────────────────────────────────────────────────────────────
 
     private fun indexNote(note: ObsidianNote) {
         notesByPath[note.path] = note
@@ -146,17 +122,6 @@ class VaultIndex(val descriptor: VaultDescriptor) {
         }
     }
 
-    /**
-     * All lookup keys for a note.
-     *
-     * Obsidian resolves `[[folder/note]]` by finding any note whose vault-relative path
-     * ENDS WITH `folder/note.md`. We therefore index every trailing sub-path.
-     *
-     * Example: `modules/platform/platform.md` produces keys:
-     *   "platform"                  ← bare filename
-     *   "platform/platform"         ← 2-component suffix
-     *   "modules/platform/platform" ← full relative path
-     */
     private fun ObsidianNote.allKeys(): List<String> = buildList {
         val relativeNoExt = relativePath.toString().removeSuffix(".md").replace('\\', '/')
         val parts = relativeNoExt.split('/')

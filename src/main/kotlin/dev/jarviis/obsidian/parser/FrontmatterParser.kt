@@ -14,21 +14,12 @@ object FrontmatterParser {
 
     private val FRONTMATTER_REGEX = Regex("""^---\r?\n(.*?)\r?\n---\r?\n?""", RegexOption.DOT_MATCHES_ALL)
 
-    /**
-     * Returns the raw YAML block string from [text] (without delimiters),
-     * or null if no frontmatter is present.
-     */
     fun extractRaw(text: String): String? =
         FRONTMATTER_REGEX.find(text)?.groupValues?.get(1)
 
-    /**
-     * Returns the character length of the full frontmatter block (including delimiters),
-     * so callers can skip past it when scanning the body.
-     */
     fun frontmatterLength(text: String): Int =
         FRONTMATTER_REGEX.find(text)?.value?.length ?: 0
 
-    /** Parse frontmatter from note text; returns [Frontmatter.EMPTY] on missing or malformed YAML. */
     fun parse(text: String): Frontmatter {
         val raw = extractRaw(text) ?: return Frontmatter.EMPTY
         return try {

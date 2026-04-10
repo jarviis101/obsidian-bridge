@@ -8,7 +8,6 @@ import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
-import dev.jarviis.obsidian.vault.VaultManager
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -21,7 +20,6 @@ private val LOG = logger<VaultWatcher>()
 class VaultWatcher(private val manager: VaultManager) : AsyncFileListener {
 
     override fun prepareChange(events: MutableList<out VFileEvent>): AsyncFileListener.ChangeApplier? {
-        // Collect only events that touch .md files inside a registered vault
         val relevant = events.mapNotNull { event -> classify(event) }
         if (relevant.isEmpty()) return null
 

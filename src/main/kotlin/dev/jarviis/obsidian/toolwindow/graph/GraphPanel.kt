@@ -32,57 +32,35 @@ import kotlin.math.*
  */
 class GraphPanel(private val project: Project) : JPanel() {
 
-    // ── Model ──────────────────────────────────────────────────────────────────
-
     inner class Node(val id: String, val name: String) {
         @Volatile var x: Double = 0.0
         @Volatile var y: Double = 0.0
         @Volatile var degree: Int = 0
-
-        /** Fixed position while the user is dragging this node. */
         @Volatile var fx: Double? = null
         @Volatile var fy: Double? = null
-
         val r: Float get() = (5f + sqrt(degree.toFloat()) * 1.8f).coerceIn(5f, 22f)
     }
 
     inner class Edge(val source: Node, val target: Node)
 
-    // ── Graph state ────────────────────────────────────────────────────────────
-
     @Volatile private var nodes: List<Node> = emptyList()
     @Volatile private var edges: List<Edge> = emptyList()
     @Volatile private var settled = false
 
-    // ── UI state ───────────────────────────────────────────────────────────────
-
     private var selected: Node? = null
     private var hovered: Node? = null
-
-    // ── View transform ─────────────────────────────────────────────────────────
 
     private var scale = 1.0
     private var panX  = 0.0
     private var panY  = 0.0
-
-    // ── Drag state ─────────────────────────────────────────────────────────────
 
     private var dragNode: Node? = null
     private var dragBg = false
     private var lastMx = 0
     private var lastMy = 0
 
-    // ── Simulation ─────────────────────────────────────────────────────────────
-
     private val simRunning = AtomicBoolean(false)
-
-    /**
-     * Fires at ~60 fps while the simulation is running, so the layout animates
-     * smoothly. Stopped as soon as the simulation converges.
-     */
     private val paintTimer = Timer(16) { repaint() }
-
-    // ── Colors (light/dark theme aware) ────────────────────────────────────────
 
     private val cBg      = JBColor(Color(250, 250, 252), Color(43, 45, 48))
     private val cNode    = JBColor(Color(97, 175, 239),  Color(86, 156, 214))
@@ -90,11 +68,8 @@ class GraphPanel(private val project: Project) : JPanel() {
     private val cHover   = JBColor(Color(198, 120, 221), Color(198, 120, 221))
     private val cNbr     = JBColor(Color(152, 195, 121), Color(152, 195, 121))
     private val cEdge    = JBColor(Color(180, 185, 200, 120), Color(80, 90, 110, 100))
-    private val cEdgeHi  = JBColor(Color(97, 175, 239, 200),  Color(86, 156, 214, 180))
     private val cLabel   = JBColor(Color(40,  44,  52),  Color(171, 178, 191))
     private val cHud     = JBColor(Color(160, 160, 165), Color(110, 115, 120))
-
-    // ── Init ──────────────────────────────────────────────────────────────────
 
     init {
         isOpaque = true
@@ -112,8 +87,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         if (settled) saveLayout()
         super.removeNotify()
     }
-
-    // ── Graph loading ──────────────────────────────────────────────────────────
 
     fun loadGraph() {
         simRunning.set(false)
@@ -155,8 +128,6 @@ class GraphPanel(private val project: Project) : JPanel() {
             }
         }
 
-        // Spread nodes in a portrait ellipse — narrower horizontally, taller vertically.
-        // Min spacing accounts for the push radius so nearby nodes don't start overlapping.
         val initW   = width.takeIf  { it > 50 } ?: 800
         val initH   = height.takeIf { it > 50 } ?: 600
         val spreadX = initW * 0.28
@@ -165,14 +136,13 @@ class GraphPanel(private val project: Project) : JPanel() {
         val rng = java.util.Random(42)
         val nodeList = nodeMap.values.toList()
         for (node in nodeList) {
-            val pushR = node.r + 20.0   // matches drag push radius
+            val pushR = node.r + 20.0
             var attempts = 0
             do {
                 val angle  = rng.nextDouble() * 2 * PI
                 val radius = sqrt(rng.nextDouble())
                 node.x = cx + cos(angle) * radius * spreadX
                 node.y = cy + sin(angle) * radius * spreadY
-                // Accept position if far enough from already-placed nodes
                 val tooClose = nodeList.any { other ->
                     other !== node && other.x != 0.0 &&
                     hypot(node.x - other.x, node.y - other.y) < pushR * 2
@@ -189,15 +159,12 @@ class GraphPanel(private val project: Project) : JPanel() {
         scale    = 1.0; panX = 0.0; panY = 0.0
 
         if (restoreLayout()) {
-            // Positions loaded from previous session — skip full simulation
             settled = true
             SwingUtilities.invokeLater { fitToView() }
         } else {
             runSimulation()
         }
     }
-
-    // ── Force-directed layout (Fruchterman–Reingold) ───────────────────────────
 
     private fun runSimulation() {
         simRunning.set(true)
@@ -227,7 +194,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         val w = width.takeIf  { it > 50 } ?: 800
         val h = height.takeIf { it > 50 } ?: 600
 
-        // k = ideal distance between connected nodes
         val k       = sqrt(w.toDouble() * h / n) * 0.9
         var temp    = sqrt(w.toDouble() * h) * 0.10
         val cooling = 0.97
@@ -238,15 +204,12 @@ class GraphPanel(private val project: Project) : JPanel() {
             else    -> 320
         }
 
-        // Pre-index edges as int pairs for O(1) access
         val nodeIdx = HashMap<Node, Int>(n * 2)
         ln.forEachIndexed { i, nd -> nodeIdx[nd] = i }
         val eSrc = IntArray(le.size) { nodeIdx[le[it].source] ?: 0 }
         val eTgt = IntArray(le.size) { nodeIdx[le[it].target] ?: 0 }
 
-        // Effective radius per node = full label bounding-box half-diagonal.
-        // Nodes whose labels would overlap get a hard extra push during simulation.
-        val charW  = 7.5;  val labelHH = 9.0   // approx char width, label half-height
+        val charW  = 7.5;  val labelHH = 9.0
         val effR   = DoubleArray(n) { i ->
             val nd  = ln[i]
             val hlw = minOf(nd.name.length, 26) * charW / 2.0
@@ -261,7 +224,6 @@ class GraphPanel(private val project: Project) : JPanel() {
 
             dx.fill(0.0); dy.fill(0.0)
 
-            // Repulsion — O(n²), acceptable for vaults up to ~600 notes
             for (i in 0 until n) {
                 val vi = ln[i]
                 for (j in i + 1 until n) {
@@ -269,9 +231,7 @@ class GraphPanel(private val project: Project) : JPanel() {
                     val ddx = vi.x - vj.x
                     val ddy = vi.y - vj.y
                     val d   = max(sqrt(ddx * ddx + ddy * ddy), 0.5)
-                    // FR base repulsion
                     val f   = k * k / d
-                    // Strong push when label bounding boxes would overlap
                     val combined = effR[i] + effR[j]
                     val labelF   = if (d < combined) (combined - d) * 4.5 else 0.0
                     val total    = (f + labelF) / d
@@ -280,7 +240,6 @@ class GraphPanel(private val project: Project) : JPanel() {
                 }
             }
 
-            // Attraction along edges
             for (e in le.indices) {
                 val si  = eSrc[e]; val ti = eTgt[e]
                 val vs  = ln[si];  val vt = ln[ti]
@@ -292,7 +251,6 @@ class GraphPanel(private val project: Project) : JPanel() {
                 dx[ti] += ddx / d * f;  dy[ti] += ddy / d * f
             }
 
-            // Center gravity — pulls isolated nodes toward the graph centre
             val gcx = w / 2.0; val gcy = h / 2.0
             for (i in 0 until n) {
                 val g = if (ln[i].degree == 0) 0.06 else 0.008
@@ -300,7 +258,6 @@ class GraphPanel(private val project: Project) : JPanel() {
                 dy[i] += (gcy - ln[i].y) * g
             }
 
-            // Apply displacement with temperature cap + boundary clamping
             for (i in 0 until n) {
                 val v = ln[i]
                 val fx = v.fx; val fy = v.fy
@@ -317,13 +274,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         }
     }
 
-    /**
-     * Post-processing pass: pushes nodes apart until no two label bounding boxes overlap.
-     * Uses approximate character metrics (no Graphics2D needed on background thread).
-     *
-     * Runs after [forceLayout] converges — the FR forces are already balanced, so this
-     * only moves nodes by the minimum distance needed to clear label collisions.
-     */
     private fun separateLabels() {
         val ln = nodes
         val n  = ln.size
@@ -332,8 +282,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         val vw = width.takeIf  { it > 50 } ?: 800
         val vh = height.takeIf { it > 50 } ?: 600
 
-        // Estimate the scale that fitToView() will produce so label dimensions
-        // can be expressed in graph coordinates rather than screen pixels.
         val minX = ln.minOf { it.x } - 40.0
         val maxX = ln.maxOf { it.x } + 40.0
         val minY = ln.minOf { it.y } - 40.0
@@ -342,7 +290,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         val gh = (maxY - minY).coerceAtLeast(1.0)
         val estScale = min(vw / gw, vh / gh).coerceIn(0.05, 2.0)
 
-        // Label pixel dimensions converted to graph-space units
         val charW  = 7.5  / estScale
         val labelH = 15.0 / estScale
         val padX   = 8.0  / estScale
@@ -370,7 +317,6 @@ class GraphPanel(private val project: Project) : JPanel() {
                     val overlapY = minOf(aY2, bY2) - maxOf(aY1, bY1)
                     if (overlapX <= 0 || overlapY <= 0) continue
 
-                    // Push along the axis with less penetration (MTV)
                     val dx = b.x - a.x
                     val dy = b.y - a.y
                     val d  = max(sqrt(dx * dx + dy * dy), 1.0)
@@ -386,14 +332,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         }
     }
 
-    /**
-     * Iteratively push apart all node pairs that are closer than their combined
-     * push radii. Used both during initial layout and during drag so the behaviour
-     * is identical in both cases.
-     *
-     * @param pinned  node that must not be moved (the dragged node), or null
-     * @param maxIter maximum number of passes
-     */
     private fun resolveCollisions(pinned: Node? = null, maxIter: Int = 80) {
         val ln = nodes
         val n  = ln.size
@@ -431,7 +369,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         }
     }
 
-    /** Compress node positions horizontally to give a portrait-oriented layout. */
     private fun stretchHorizontally() {
         val ln = nodes
         if (ln.isEmpty()) return
@@ -443,14 +380,11 @@ class GraphPanel(private val project: Project) : JPanel() {
         }
     }
 
-    // ── Layout persistence ─────────────────────────────────────────────────────
-
     private fun layoutKey(): String? {
         val index = service<VaultManager>().indexForProject(project) ?: return null
         return "obsidian.graph.layout.${index.descriptor.rootPathString}"
     }
 
-    /** Serialize current node positions to project-scoped PropertiesComponent. */
     private fun saveLayout() {
         val key = layoutKey() ?: return
         val ln  = nodes
@@ -459,10 +393,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         PropertiesComponent.getInstance(project).setValue(key, data)
     }
 
-    /**
-     * Restore previously saved node positions.
-     * Returns true if at least half of the current nodes had saved positions.
-     */
     private fun restoreLayout(): Boolean {
         val key  = layoutKey() ?: return false
         val data = PropertiesComponent.getInstance(project).getValue(key) ?: return false
@@ -490,10 +420,7 @@ class GraphPanel(private val project: Project) : JPanel() {
         return hit >= ln.size / 2
     }
 
-    /** Zoom/pan so all nodes fit in the visible area after the layout converges. */
     private fun fitToView() {
-        // Exclude isolated nodes from the bounding box — they tend to drift and
-        // would cause the view to zoom out too much, hiding the main graph.
         val ln = nodes.filter { it.degree > 0 }.takeIf { it.isNotEmpty() } ?: nodes
         if (ln.isEmpty() || width == 0 || height == 0) return
 
@@ -511,8 +438,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         panY  = (height - gh * scale) / 2.0 - minY * scale
         repaint()
     }
-
-    // ── Rendering ─────────────────────────────────────────────────────────────
 
     override fun paintComponent(g: Graphics) {
         val g2 = g as Graphics2D
@@ -538,7 +463,6 @@ class GraphPanel(private val project: Project) : JPanel() {
               .flatMapTo(HashSet()) { listOf(it.source, it.target) }
         else emptySet()
 
-        // Edge base alpha scales with density — fewer edges = more opaque
         val baseEdgeAlpha = when {
             le.size > 500 -> 38
             le.size > 200 -> 55
@@ -546,7 +470,6 @@ class GraphPanel(private val project: Project) : JPanel() {
             else          -> 100
         }
 
-        // ── Edges ──────────────────────────────────────────────────────────────
         for (edge in le) {
             val isHl  = sel != null && (edge.source === sel || edge.target === sel)
             val isDim = sel != null && !isHl
@@ -559,7 +482,6 @@ class GraphPanel(private val project: Project) : JPanel() {
             )
         }
 
-        // ── Pass 1: draw node circles (dimmed first, important on top) ──────────
         fun drawCircle(node: Node) {
             val r  = node.r.toInt().coerceAtLeast(2)
             val cx = node.x.toInt(); val cy = node.y.toInt()
@@ -591,9 +513,6 @@ class GraphPanel(private val project: Project) : JPanel() {
             for (node in ln) drawCircle(node)
         }
 
-        // ── Pass 2: draw labels (nodes already separated by separateLabels()) ────
-
-        // LOD: label visibility based on zoom and degree
         fun labelVisible(node: Node): Boolean {
             if (node === sel || node === hovered || node in neighbors) return true
             return when {
@@ -637,16 +556,13 @@ class GraphPanel(private val project: Project) : JPanel() {
         g2.font  = Font(Font.SANS_SERIF, Font.PLAIN, 11)
         g2.color = cHud
 
-        // Bottom-left: stats
         val status = "$noteCount notes  ·  $edgeCount links" + if (!settled) "  ·  laying out…" else ""
         g2.drawString(status, 10, height - 10)
 
-        // Bottom-right: hint
         val hint = "Scroll: zoom  ·  Drag: pan  ·  Click: select  ·  Dbl-click: open"
         val hfm  = g2.fontMetrics
         g2.drawString(hint, width - hfm.stringWidth(hint) - 10, height - 10)
 
-        // Top-left: selected node info
         val sel = selected
         if (sel != null) {
             g2.color = cLabel
@@ -658,12 +574,6 @@ class GraphPanel(private val project: Project) : JPanel() {
         }
     }
 
-    // ── Mouse ─────────────────────────────────────────────────────────────────
-
-    /**
-     * While the user drags [dragged], push overlapping nodes away recursively.
-     * Reuses [resolveCollisions] with the dragged node pinned so it stays at the cursor.
-     */
     private fun pushNeighbors(dragged: Node) {
         resolveCollisions(pinned = dragged, maxIter = 15)
     }
@@ -676,11 +586,11 @@ class GraphPanel(private val project: Project) : JPanel() {
                 val hit = nodeAt(e.x, e.y)
                 if (hit != null) {
                     dragNode = hit
-                    selected = hit   // highlight node + neighbours immediately on press
+                    selected = hit
                     repaint()
                 } else {
                     dragBg   = true
-                    selected = null  // click on background deselects
+                    selected = null
                     repaint()
                 }
             }
@@ -709,7 +619,6 @@ class GraphPanel(private val project: Project) : JPanel() {
                 if (e.clickCount >= 2) {
                     nodeAt(e.x, e.y)?.let { openNote(it) }
                 }
-                // Single-click selection is handled in mousePressed for instant feedback
             }
 
             override fun mouseMoved(e: MouseEvent) {
@@ -730,11 +639,8 @@ class GraphPanel(private val project: Project) : JPanel() {
         addMouseMotionListener(adapter)
 
         addMouseWheelListener { e ->
-            // preciseWheelRotation works with both regular mouse wheel (integer steps)
-            // and trackpad smooth scroll (fractional values). Negative = scroll up = zoom in.
             val rotation = e.preciseWheelRotation
             if (rotation == 0.0) return@addMouseWheelListener
-            // Exponential scaling: each unit of rotation = ~11% zoom, scales smoothly
             val factor = exp(-rotation * 0.11)
             val mx = e.x.toDouble()
             val my = e.y.toDouble()
@@ -745,23 +651,17 @@ class GraphPanel(private val project: Project) : JPanel() {
         }
     }
 
-    // ── Coordinate helpers ────────────────────────────────────────────────────
-
     private fun toGx(sx: Int) = (sx - panX) / scale
     private fun toGy(sy: Int) = (sy - panY) / scale
 
-    /** Returns the node at screen position (sx, sy), or null. */
     private fun nodeAt(sx: Int, sy: Int): Node? {
         val gx = toGx(sx); val gy = toGy(sy)
-        // Search in reverse paint order so topmost node wins
         return nodes.lastOrNull { n ->
-            val hitR = n.r.toDouble() + 5.0 / scale   // slightly generous
+            val hitR = n.r.toDouble() + 5.0 / scale
             val dx = gx - n.x; val dy = gy - n.y
             dx * dx + dy * dy <= hitR * hitR
         }
     }
-
-    // ── Actions ───────────────────────────────────────────────────────────────
 
     private fun openNote(node: Node) {
         val manager = service<VaultManager>()

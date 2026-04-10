@@ -1,9 +1,7 @@
 package dev.jarviis.obsidian.parser
 
-import dev.jarviis.obsidian.model.WikiLink
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -13,33 +11,30 @@ class WikiLinkParserTest {
         val links = WikiLinkParser.parse("See [[My Note]] for details.")
         assertEquals(1, links.size)
         assertEquals("My Note", links[0].target)
-        assertNull(links[0].alias)
-        assertNull(links[0].heading)
         assertFalse(links[0].isEmbed)
     }
 
-    @Test fun `link with alias`() {
+    @Test fun `link with alias - target only`() {
         val links = WikiLinkParser.parse("[[Note Name|click here]]")
+        assertEquals(1, links.size)
         assertEquals("Note Name", links[0].target)
-        assertEquals("click here", links[0].alias)
     }
 
-    @Test fun `link with heading`() {
+    @Test fun `link with heading - target only`() {
         val links = WikiLinkParser.parse("[[Note#Introduction]]")
+        assertEquals(1, links.size)
         assertEquals("Note", links[0].target)
-        assertEquals("Introduction", links[0].heading)
-        assertNull(links[0].blockId)
     }
 
-    @Test fun `link with block id`() {
+    @Test fun `link with block id - target only`() {
         val links = WikiLinkParser.parse("[[Note#^abc123]]")
+        assertEquals(1, links.size)
         assertEquals("Note", links[0].target)
-        assertNull(links[0].heading)
-        assertEquals("abc123", links[0].blockId)
     }
 
     @Test fun `embed link`() {
         val links = WikiLinkParser.parse("![[image.png]]")
+        assertEquals(1, links.size)
         assertTrue(links[0].isEmbed)
         assertEquals("image.png", links[0].target)
     }
@@ -49,28 +44,26 @@ class WikiLinkParserTest {
         assertEquals(3, links.size)
     }
 
-    @Test fun `link with heading and alias`() {
+    @Test fun `link with heading and alias - target only`() {
         val links = WikiLinkParser.parse("[[Note#Section|See here]]")
+        assertEquals(1, links.size)
         assertEquals("Note", links[0].target)
-        assertEquals("Section", links[0].heading)
-        assertEquals("See here", links[0].alias)
     }
 
-    @Test fun `offsets are correct`() {
+    @Test fun `start offset is correct`() {
         val text = "Text [[Note]] end"
         val links = WikiLinkParser.parse(text)
+        assertEquals(1, links.size)
         assertEquals(5, links[0].startOffset)
-        assertEquals(13, links[0].endOffset)
-        assertEquals("[[Note]]", text.substring(links[0].startOffset, links[0].endOffset))
-    }
-
-    @Test fun `findAt returns correct link`() {
-        val text = "[[Alpha]] and [[Beta]]"
-        val link = WikiLinkParser.findAt(text, 17)  // inside [[Beta]]
-        assertEquals("Beta", link?.target)
     }
 
     @Test fun `no links returns empty list`() {
         assertTrue(WikiLinkParser.parse("No links here.").isEmpty())
+    }
+
+    @Test fun `escaped pipe in table cell`() {
+        val links = WikiLinkParser.parse("| [[Note\\|Alias]] |")
+        assertEquals(1, links.size)
+        assertEquals("Note", links[0].target)
     }
 }

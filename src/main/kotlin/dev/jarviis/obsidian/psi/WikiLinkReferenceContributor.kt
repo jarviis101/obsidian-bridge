@@ -34,8 +34,7 @@ class WikiLinkReferenceContributor : PsiReferenceContributor() {
             if (links.isEmpty()) return PsiReference.EMPTY_ARRAY
 
             return links.map { link ->
-                // The reference range covers the target text (after `[[` or `![[`)
-                val prefixLen = if (link.isEmbed) 3 else 2  // `![[` vs `[[`
+                val prefixLen = if (link.isEmbed) 3 else 2
                 val rangeStart = link.startOffset + prefixLen
                 val rangeEnd = rangeStart + link.target.length
                 WikiLinkReference(
