@@ -79,6 +79,14 @@
             factoryClass="dev.jarviis.obsidian.toolwindow.graph.GraphToolWindowFactory"
             icon="dev.jarviis.obsidian.ObsidianIcons.ToolWindow"/>
 
+        <!-- ==================== Code Comments: [[wiki-link]] completion ==================== -->
+        <!-- No language attribute: registered for all languages via extend(psiElement()) pattern. -->
+        <completion.contributor order="first" implementationClass="dev.jarviis.obsidian.psi.WikiLinkCommentCompletionContributor"
+                                language="any"/>
+
+        <!-- Auto-popup: opens wiki-link suggestions when [[ is typed in any file/language -->
+        <typedHandler implementation="dev.jarviis.obsidian.psi.WikiLinkTypedHandler"/>
+
         <!-- ==================== Editor / Line Markers ==================== -->
         <lineMarkerProvider
             language="JAVA"
@@ -97,6 +105,9 @@
             implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
         <lineMarkerProvider
             language="go"
+            implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
+        <lineMarkerProvider
+            language="PHP"
             implementationClass="dev.jarviis.obsidian.bridge.TodoBridgeLineMarkerProvider"/>
 
         <!-- ==================== Settings ==================== -->
