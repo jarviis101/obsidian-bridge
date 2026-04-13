@@ -1,0 +1,12 @@
+# Copy this file to local.properties (gitignored) and adjust to your machine.
+# If localIdeDir is set, the plugin is built/verified against your local IDE installation.
+# If omitted, Gradle downloads PhpStorm from JetBrains CDN using the version in gradle.properties.
+
+# macOS example:
+# localIdeDir=/Users/yourname/Applications/PhpStorm.app
+
+# Linux example:
+# localIdeDir=/opt/phpstorm
+
+# Windows example:
+# localIdeDir=C:/Program Files/JetBrains/PhpStorm 2025.3

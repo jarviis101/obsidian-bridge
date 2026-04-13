@@ -1,9 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("java")
     alias(libs.plugins.kotlin)
     alias(libs.plugins.intellijPlatform)
     alias(libs.plugins.kotlinSerialization)
 }
+
+val localProps = Properties().also { props ->
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { props.load(it) }
+}
+fun localProp(key: String): String? = localProps.getProperty(key)
 
 group = "dev.jarviis.obsidian"
 version = "1.1.4"
@@ -25,7 +32,9 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 
     intellijPlatform {
-        local("/Users/kharchenko.o/Applications/PhpStorm.app")
+        val localIde = localProp("localIdeDir")
+        if (localIde != null) local(localIde)
+
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 }
@@ -47,7 +56,8 @@ intellijPlatform {
     }
     pluginVerification {
         ides {
-            local("/Users/kharchenko.o/Applications/PhpStorm.app")
+            val localIde = localProp("localIdeDir")
+            if (localIde != null) local(localIde)
         }
     }
 }
