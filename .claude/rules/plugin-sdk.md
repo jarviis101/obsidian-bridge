@@ -1,3 +1,8 @@
+---
+description: IntelliJ Platform APIs, extension point registration, banned APIs, and plugin patterns
+globs: ["src/**/*.kt", "src/**/*.java", "src/**/plugin.xml"]
+---
+
 # IntelliJ Plugin SDK
 
 ## Target
@@ -52,15 +57,15 @@ Always group extensions with XML comments in this order:
 
 ## Banned APIs → Modern Replacements
 
-| Banned | Use instead |
-|--------|-------------|
-| `ServiceManager.getService(...)` | `service<T>()` / `project.service<T>()` |
+| Banned                                              | Use instead                              |
+|-----------------------------------------------------|------------------------------------------|
+| `ServiceManager.getService(...)`                    | `service<T>()` / `project.service<T>()`  |
 | `ToolWindowManager.registerToolWindow(String, ...)` | Declarative `<toolWindow>` in plugin.xml |
-| `StartupActivity` (old) | `ProjectActivity` |
-| `ContentFactory.SERVICE.getInstance()` | `ContentFactory.getInstance()` |
-| `VirtualFileListener` (deprecated) | `AsyncFileListener` |
-| Raw `javax.swing.*` layouts | IntelliJ UI DSL `panel { }` or `JBPanel` |
-| `Messages.showMessageDialog` off-EDT | Always call UI from EDT |
+| `StartupActivity` (old)                             | `ProjectActivity`                        |
+| `ContentFactory.SERVICE.getInstance()`              | `ContentFactory.getInstance()`           |
+| `VirtualFileListener` (deprecated)                  | `AsyncFileListener`                      |
+| Raw `javax.swing.*` layouts                         | IntelliJ UI DSL `panel { }` or `JBPanel` |
+| `Messages.showMessageDialog` off-EDT                | Always call UI from EDT                  |
 
 ## Services
 

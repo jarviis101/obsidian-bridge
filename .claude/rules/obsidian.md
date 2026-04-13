@@ -1,3 +1,8 @@
+---
+description: Obsidian vault domain — wiki-link syntax, frontmatter, backlinks, and resolution rules
+globs: ["src/**/vault/**/*.kt", "src/**/parser/**/*.kt", "src/**/model/**/*.kt", "src/**/psi/**/*.kt", "src/**/bridge/**/*.kt"]
+---
+
 # Obsidian Domain
 
 ## Vault Structure
@@ -10,15 +15,15 @@ A vault is a directory containing `.md` files and a `.obsidian/` config folder.
 
 ## Wiki-Link Syntax
 
-| Syntax | Meaning |
-|--------|---------|
-| `[[Note Name]]` | Link by filename (no extension) |
-| `[[Note Name\|Alias]]` | Link with display alias |
-| `[[Note Name#Heading]]` | Link to heading |
-| `[[Note Name#Heading\|Alias]]` | Heading link with alias |
-| `[[Note Name#^block-id]]` | Block reference |
-| `![[Note Name]]` | Embed / transclusion |
-| `![[image.png]]` | Image embed |
+| Syntax                         | Meaning                         |
+|--------------------------------|---------------------------------|
+| `[[Note Name]]`                | Link by filename (no extension) |
+| `[[Note Name\|Alias]]`         | Link with display alias         |
+| `[[Note Name#Heading]]`        | Link to heading                 |
+| `[[Note Name#Heading\|Alias]]` | Heading link with alias         |
+| `[[Note Name#^block-id]]`      | Block reference                 |
+| `![[Note Name]]`               | Embed / transclusion            |
+| `![[image.png]]`               | Image embed                     |
 
 **Resolution rules:**
 1. Exact filename match (case-insensitive on case-insensitive FSes).

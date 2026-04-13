@@ -1,3 +1,8 @@
+---
+description: Kotlin code style, naming conventions, null safety, and patterns to avoid
+globs: ["src/**/*.kt"]
+---
+
 # Kotlin Code Standards
 
 ## Style
