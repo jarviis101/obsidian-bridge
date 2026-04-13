@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "dev.jarviis.obsidian"
-version = "1.1.3"
+version = "1.1.4"
 
 kotlin {
     jvmToolchain(21)
@@ -37,8 +37,11 @@ intellijPlatform {
         }
         changeNotes = """
             <ul>
-                <li><b>Graph sync</b> — the graph now automatically highlights the node corresponding to the currently open file. Switching between files updates the highlight in real time.</li>
-                <li>Clicking the graph background no longer clears the highlight — it returns focus to the open file's node.</li>
+                <li><b>Graph live updates</b> — the graph now automatically refreshes when vault files are created, deleted, moved, or when wiki-links are added or removed inside a note.</li>
+                <li><b>Wiki-link autocomplete for duplicate names</b> — notes with the same filename now all appear in the completion list; selecting one inserts the full disambiguating path. The prefix filter also matches against folder paths.</li>
+                <li><b>Alias folding fix</b> — <code>[[note|Alias]]</code> now correctly renders as <em>Alias</em> even when the link already had a prior fold with a different display text.</li>
+                <li><b>Fold refresh on vault ready</b> — <code>.md</code> files opened during IDE startup now receive their wiki-link folds once the vault index is fully built.</li>
+                <li><b>Graph colors</b> — replaced direct <code>java.awt.Color</code> alpha usage with <code>ColorUtil.withAlpha</code> for proper theme support.</li>
             </ul>
         """.trimIndent()
     }

@@ -117,15 +117,6 @@ private class WikiLinkCaretListener(private val editor: Editor) : CaretListener 
 
     private fun foldRange(range: IntRange) {
         editor.foldingModel.runBatchFoldingOperation {
-            // Collapse existing expanded fold
-            val existing = editor.foldingModel.allFoldRegions
-                .find { it.startOffset == range.first && it.endOffset == range.last + 1 }
-            if (existing != null) {
-                if (existing.isExpanded) existing.isExpanded = false
-                return@runBatchFoldingOperation
-            }
-
-            // No fold yet (user just created a new link) — create one if note exists
             val virtualFile = editor.virtualFile ?: return@runBatchFoldingOperation
             val path = Paths.get(virtualFile.path)
             val wikiText = editor.document.charsSequence
@@ -135,8 +126,21 @@ private class WikiLinkCaretListener(private val editor: Editor) : CaretListener 
             val index = manager.indexForPath(path) ?: return@runBatchFoldingOperation
             val note = index.resolve(target, path) ?: return@runBatchFoldingOperation
             val displayText = extractAlias(wikiText)?.takeIf { it.isNotBlank() } ?: note.name
-            val newFold = editor.foldingModel.addFoldRegion(range.first, range.last + 1, displayText)
-            newFold?.isExpanded = false
+
+            val existing = editor.foldingModel.allFoldRegions
+                .find { it.startOffset == range.first && it.endOffset == range.last + 1 }
+            if (existing != null) {
+                if (existing.placeholderText != displayText) {
+                    editor.foldingModel.removeFoldRegion(existing)
+                    val newFold = editor.foldingModel.addFoldRegion(range.first, range.last + 1, displayText)
+                    newFold?.isExpanded = false
+                } else if (existing.isExpanded) {
+                    existing.isExpanded = false
+                }
+            } else {
+                val newFold = editor.foldingModel.addFoldRegion(range.first, range.last + 1, displayText)
+                newFold?.isExpanded = false
+            }
         }
     }
 }

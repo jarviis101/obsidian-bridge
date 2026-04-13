@@ -1,9 +1,13 @@
 package dev.jarviis.obsidian.startup
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import com.intellij.psi.PsiManager
 import dev.jarviis.obsidian.settings.ProjectVaultSettings
 import dev.jarviis.obsidian.vault.VaultManager
 import dev.jarviis.obsidian.vault.detectVaultIn
@@ -30,19 +34,36 @@ class ObsidianStartupActivity : ProjectActivity {
                     manager.registerVault(descriptor)
                 }
             }
-            return
+        } else {
+            val basePath = project.basePath ?: return
+            LOG.info("ObsidianBridge: scanning for vault in '$basePath'")
+            val detected = detectVaultIn(Paths.get(basePath)) ?: run {
+                LOG.info("ObsidianBridge: no vault found in '$basePath'")
+                return
+            }
+
+            LOG.info("ObsidianBridge: auto-detected vault '${detected.name}' at ${detected.rootPathString}")
+            manager.registerVault(detected)
+            projectSettings.vaults = listOf(detected)
+            LOG.info("ObsidianBridge: project '${project.name}' auto-linked to vault '${detected.name}'")
         }
 
-        val basePath = project.basePath ?: return
-        LOG.info("ObsidianBridge: scanning for vault in '$basePath'")
-        val detected = detectVaultIn(Paths.get(basePath)) ?: run {
-            LOG.info("ObsidianBridge: no vault found in '$basePath'")
-            return
+        // Vault indexing is async. Once done, restart code analysis so FoldingBuilder
+        // re-runs on all open .md files that were opened before the index was ready.
+        val listener = object : VaultManager.VaultChangeListener {
+            override fun onVaultChanged() {
+                manager.removeChangeListener(this)
+                ApplicationManager.getApplication().invokeLater {
+                    if (project.isDisposed) return@invokeLater
+                    val analyzer = DaemonCodeAnalyzer.getInstance(project)
+                    val psiManager = PsiManager.getInstance(project)
+                    FileEditorManager.getInstance(project).openFiles
+                        .filter { it.name.endsWith(".md") }
+                        .mapNotNull { psiManager.findFile(it) }
+                        .forEach { analyzer.restart(it, "vault indexed") }
+                }
+            }
         }
-
-        LOG.info("ObsidianBridge: auto-detected vault '${detected.name}' at ${detected.rootPathString}")
-        manager.registerVault(detected)
-        projectSettings.vaults = listOf(detected)
-        LOG.info("ObsidianBridge: project '${project.name}' auto-linked to vault '${detected.name}'")
+        manager.addChangeListener(listener)
     }
 }

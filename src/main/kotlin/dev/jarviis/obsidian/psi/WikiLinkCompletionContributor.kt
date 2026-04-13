@@ -37,19 +37,30 @@ class WikiLinkCompletionContributor : CompletionContributor() {
         val index = manager.indexForProject(project) ?: return
 
         val allNotes = index.allNotes()
+        val duplicateNames = allNotes.groupingBy { it.name.lowercase() }.eachCount()
+            .filterValues { it > 1 }.keys
+
+        val q = prefix.lowercase()
         val notes = if (prefix.isBlank()) allNotes
-                    else { val q = prefix.lowercase(); allNotes.filter { it.name.lowercase().contains(q) } }
+                    else allNotes.filter { note ->
+                        val relPath = note.relativePath.toString().removeSuffix(".md").replace('\\', '/')
+                        note.name.lowercase().contains(q) || relPath.lowercase().contains(q)
+                    }
 
         for (note in notes) {
-            val element = LookupElementBuilder.create(note.name)
+            val isDuplicate = note.name.lowercase() in duplicateNames
+            val relPath = note.relativePath.toString().removeSuffix(".md").replace('\\', '/')
+            val insertText = if (isDuplicate) relPath else note.name
+            val tailText = buildString {
+                if (isDuplicate) append(" $relPath")
+                if (note.frontmatter.aliases.isNotEmpty())
+                    append(" (${note.frontmatter.aliases.joinToString()})")
+            }
+            val element = LookupElementBuilder.create(insertText)
+                .withPresentableText(note.name)
                 .withIcon(ObsidianIcons.Note)
                 .withTypeText(note.vaultName, true)
-                .withTailText(
-                    if (note.frontmatter.aliases.isNotEmpty())
-                        " (${note.frontmatter.aliases.joinToString()})"
-                    else "",
-                    true
-                )
+                .withTailText(tailText, true)
             result.addElement(element)
         }
         result.stopHere()

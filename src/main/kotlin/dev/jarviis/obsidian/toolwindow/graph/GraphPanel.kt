@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.ui.JBColor
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.intellij.ui.ColorUtil
 import com.intellij.util.messages.MessageBusConnection
 import dev.jarviis.obsidian.vault.VaultManager
 import java.awt.*
@@ -65,6 +66,7 @@ class GraphPanel(private val project: Project) : JPanel() {
     private val simRunning = AtomicBoolean(false)
     private val paintTimer = Timer(16) { repaint() }
     private var busConnection: MessageBusConnection? = null
+    private var vaultChangeListener: VaultManager.VaultChangeListener? = null
 
     private val cBg      = JBColor(Color(250, 250, 252), Color(43, 45, 48))
     private val cNode    = JBColor(Color(97, 175, 239),  Color(86, 156, 214))
@@ -89,10 +91,15 @@ class GraphPanel(private val project: Project) : JPanel() {
                 SwingUtilities.invokeLater { selectByPath(path) }
             }
         })
+        val listener = VaultManager.VaultChangeListener { SwingUtilities.invokeLater { loadGraph() } }
+        vaultChangeListener = listener
+        service<VaultManager>().addChangeListener(listener)
         loadGraph()
     }
 
     override fun removeNotify() {
+        vaultChangeListener?.let { service<VaultManager>().removeChangeListener(it) }
+        vaultChangeListener = null
         busConnection?.disconnect()
         busConnection = null
         simRunning.set(false)
@@ -493,8 +500,7 @@ class GraphPanel(private val project: Project) : JPanel() {
         for (edge in le) {
             val isHl  = sel != null && (edge.source === sel || edge.target === sel)
             val isDim = sel != null && !isHl
-            g2.color  = Color(cEdge.red, cEdge.green, cEdge.blue,
-                              if (isHl) 200 else if (isDim) 18 else baseEdgeAlpha)
+            g2.color  = ColorUtil.withAlpha(cEdge, (if (isHl) 200 else if (isDim) 18 else baseEdgeAlpha) / 255.0)
             g2.stroke = BasicStroke(if (isHl) 1.4f else 0.6f)
             g2.drawLine(
                 edge.source.x.toInt(), edge.source.y.toInt(),
@@ -510,7 +516,7 @@ class GraphPanel(private val project: Project) : JPanel() {
                 node === sel      -> cSel
                 node === hovered  -> cHover
                 node in neighbors -> cNbr
-                sel != null       -> Color(cNode.red, cNode.green, cNode.blue, 50)
+                sel != null       -> ColorUtil.withAlpha(cNode, 50 / 255.0)
                 else              -> cNode
             }
             g2.color = col
@@ -550,7 +556,7 @@ class GraphPanel(private val project: Project) : JPanel() {
             val cx = node.x.toInt(); val cy = node.y.toInt()
             val isImportant = node === sel || node === hovered || node in neighbors
             val alpha = if (sel != null && !isImportant) 55 else 210
-            g2.color = Color(cLabel.red, cLabel.green, cLabel.blue, alpha)
+            g2.color = ColorUtil.withAlpha(cLabel, alpha / 255.0)
             val fs    = (10.0 / scale).toInt().coerceIn(9, 14)
             g2.font   = Font(Font.SANS_SERIF, if (node === sel) Font.BOLD else Font.PLAIN, fs)
             val fm    = g2.fontMetrics

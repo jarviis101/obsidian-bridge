@@ -91,6 +91,10 @@ class VaultManager {
         listeners += listener
     }
 
+    fun removeChangeListener(listener: VaultChangeListener) {
+        listeners -= listener
+    }
+
     private fun notifyListeners() {
         listeners.forEach { it.onVaultChanged() }
     }
