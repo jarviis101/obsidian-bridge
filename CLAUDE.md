@@ -1,12 +1,15 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Project
-
-**Obsidian IDE Bridge** — a JetBrains plugin that integrates an Obsidian vault into the IDE. Features: wiki-link navigation/autocompletion, backlinks panel (outgoing links + incoming backlinks), YAML frontmatter display, TODO/FIXME ↔ note bridging, daily notes, and templates. Compatible with all major JetBrains IDEs.
-
+**Obsidian Lens** — JetBrains plugin that integrates an Obsidian vault into the IDE.
 Plugin ID: `dev.jarviis.obsidian.obsidian-bridge` | Package: `dev.jarviis.obsidian`
+
+## Rules
+
+Detailed rules are in `.claude/rules/`:
+- **`architecture.md`** — package layout, layer dependencies, critical invariants
+- **`code-standards.md`** — Kotlin style, patterns, what to avoid
+- **`plugin-sdk.md`** — IntelliJ Platform APIs, extension points, banned APIs
+- **`obsidian.md`** — Obsidian vault structure, wiki-link syntax, domain logic
 
 ## Commands
 
@@ -14,64 +17,17 @@ Plugin ID: `dev.jarviis.obsidian.obsidian-bridge` | Package: `dev.jarviis.obsidi
 ./gradlew runIde          # Launch sandboxed IDE with plugin loaded
 ./gradlew build           # Compile + package plugin ZIP
 ./gradlew test            # Run all tests
-./gradlew test --tests "dev.jarviis.obsidian.parser.WikiLinkParserTest"  # Single test class
 ./gradlew verifyPlugin    # Check compatibility against target IDEs
 ./gradlew publishPlugin   # Publish to JetBrains Marketplace (requires token)
 ```
-
-Pre-configured Run/Debug configurations are in `.run/`.
 
 ## Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Kotlin 2.2.x + Java (factory layer), JVM 21 |
+| Language | Kotlin 2.2.x, JVM 21 |
 | Build | Gradle 9.2.1 + IntelliJ Platform Gradle Plugin v2 |
 | Platform | IntelliJ Platform SDK, `sinceBuild=253` (2025.3+) |
-| Graph UI | Pure Swing/Java2D — Fruchterman–Reingold force layout, no JCEF/D3.js required |
-| YAML | SnakeYAML (on IntelliJ classpath — no extra dep needed) |
+| Graph UI | Pure Swing/Java2D, Fruchterman–Reingold layout |
+| YAML | SnakeYAML (bundled with IntelliJ, no extra dep) |
 | Date/Time | `java.time` only |
-
-## Architecture
-
-Detailed rules live in `.claude/rules/`:
-- **`architecture.md`** — package layout, service design, threading model
-- **`intellij-platform.md`** — extension points, banned APIs, UI components, testing
-- **`obsidian-domain.md`** — wiki-link syntax, frontmatter, backlinks, daily notes, templates, TODO bridge
-
-### Layer Summary
-
-```
-model/ → parser/ → vault/ → psi/ / bridge/ / toolwindow/ / actions/ / settings/
-```
-
-- **`model/`** — pure data classes (`ObsidianNote`, `WikiLink`, `Frontmatter`). No IntelliJ or IO dependencies.
-- **`parser/`** — stateless: `WikiLinkParser`, `FrontmatterParser`, `TemplateEngine`. Input strings, output model objects.
-- **`vault/`** — `VaultManager` (app service), `VaultIndex` (per-vault, thread-safe), `VaultScanner`, `VaultWatcher`, `VaultDetector` (`detectVaultIn()` — shared vault discovery logic).
-- **`psi/`** — `WikiLinkReferenceContributor`, `WikiLinkReference`, `WikiLinkCompletionContributor`. References resolve via `VaultIndex`, never live FS scans.
-- **`bridge/`** — `TodoBridgeLineMarker` (gutter icons on TODO/FIXME lines linking to notes).
-- **`toolwindow/backlinks/`** — shows two sections: **Links** (outgoing — notes this file links to) and **Backlinks** (incoming — notes that link to this file). Both lists are clickable.
-- **`toolwindow/graph/`** — pure Swing/Java2D graph view (`GraphPanel.kt`). Force-directed layout with portrait orientation, label-aware node separation, drag-to-push collision resolution, and per-project layout persistence via `PropertiesComponent`.
-- **`settings/`** — `AppVaultSettings` / `ProjectVaultSettings` (`PersistentStateComponent`), `ProjectSettingsConfigurable` (per-project vault list with **+** / **−** / **Scan project for vault**). `AppSettingsConfigurable` exists but is no longer registered in `plugin.xml`.
-- **`startup/`** — `ObsidianStartupActivity` (`ProjectActivity`): on project open, re-registers a saved vault or runs auto-detection via `detectVaultIn()`.
-- **`actions/`** — `DailyNoteAction`, `OpenInObsidianAction`.
-
-### Key Design Decisions
-
-- `VaultIndex` is rebuilt on vault open and updated **incrementally** on file change events from `VaultWatcher`.
-- **`upsert()` must NOT call `backlinks.remove(path)`** — that slot is owned by other notes that link to this note. Only the actual `remove()` (file deletion) clears it. Violating this causes backlinks to drop to zero whenever IntelliJ triggers a file-change event on open.
-- **All path suffixes are indexed** in `allKeys()`. A note at `modules/platform/platform.md` is findable by `platform`, `platform/platform`, and `modules/platform/platform`. This matches Obsidian's resolution of path-qualified links like `[[platform/platform]]`.
-- Wiki-link `\|` in Markdown table cells is unescaped before parsing: `replace("\\|", "|")` in `WikiLinkParser`.
-- Relative links (`./foo`, `../foo`) are resolved using `contextPath.parent.resolve(target).normalize()` with `.md` extension fallback.
-- **Vault setup has two tiers**: (1) `ObsidianStartupActivity` auto-detects on project open using `detectVaultIn()`; (2) if that fails, the user opens **Settings → Tools → Obsidian Lens** (`ProjectSettingsConfigurable`) and either clicks **+** (file chooser) or **Scan project for vault** (re-runs `detectVaultIn()`). Each project stores its own vault list in `ProjectVaultSettings`; the first entry is the active vault. Lists are never shared between projects.
-- Graph view is pure Swing/Java2D — no JCEF dependency. `VaultManager.indices` is keyed by `rootPathString` (not vault name) so two projects with same-named vaults get independent indices.
-- Obsidian URI (`obsidian://open?vault=...&file=...`) used for "Open in Obsidian" actions via `Desktop.browse()`.
-- All user-visible strings go through `ObsidianBundle`.
-
-## Active Tool Windows (plugin.xml)
-
-`Obsidian Backlinks` and `Obsidian Graph` are registered. Tags and Search tool windows are commented out.
-
-## plugin.xml Extension Point Categories
-
-Extensions are grouped in `plugin.xml` by: Services → PSI/References → Tool Windows → Editor → Actions → Settings.
