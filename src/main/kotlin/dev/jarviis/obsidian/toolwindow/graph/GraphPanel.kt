@@ -11,6 +11,7 @@ import com.intellij.ui.JBColor
 import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.ui.ColorUtil
 import com.intellij.util.messages.MessageBusConnection
+import dev.jarviis.obsidian.ObsidianBundle
 import dev.jarviis.obsidian.vault.VaultManager
 import java.awt.*
 import java.awt.event.*
@@ -574,7 +575,7 @@ class GraphPanel(private val project: Project) : JPanel() {
     private fun drawEmptyState(g2: Graphics2D) {
         g2.color = cHud
         g2.font  = Font(Font.SANS_SERIF, Font.PLAIN, 13)
-        val msg  = "No vault linked to this project"
+        val msg  = ObsidianBundle.message("graph.empty.state")
         g2.drawString(msg, (width - g2.fontMetrics.stringWidth(msg)) / 2, height / 2)
     }
 
@@ -582,10 +583,11 @@ class GraphPanel(private val project: Project) : JPanel() {
         g2.font  = Font(Font.SANS_SERIF, Font.PLAIN, 11)
         g2.color = cHud
 
-        val status = "$noteCount notes  ·  $edgeCount links" + if (!settled) "  ·  laying out…" else ""
+        val status = ObsidianBundle.message("graph.hud.status", noteCount, edgeCount) +
+            if (!settled) ObsidianBundle.message("graph.hud.laying.out") else ""
         g2.drawString(status, 10, height - 10)
 
-        val hint = "Scroll: zoom  ·  Drag: pan  ·  Click: select  ·  Dbl-click: open"
+        val hint = ObsidianBundle.message("graph.hud.hint")
         val hfm  = g2.fontMetrics
         g2.drawString(hint, width - hfm.stringWidth(hint) - 10, height - 10)
 
@@ -596,7 +598,7 @@ class GraphPanel(private val project: Project) : JPanel() {
             g2.drawString(sel.name, 10, 18)
             g2.font  = Font(Font.SANS_SERIF, Font.PLAIN, 11)
             g2.color = cHud
-            g2.drawString("${sel.degree} connection(s)", 10, 33)
+            g2.drawString(ObsidianBundle.message("graph.hud.connections", sel.degree), 10, 33)
         }
     }
 

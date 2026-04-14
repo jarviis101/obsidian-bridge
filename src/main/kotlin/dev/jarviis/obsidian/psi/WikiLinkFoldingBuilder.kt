@@ -24,7 +24,7 @@ class WikiLinkFoldingBuilder : FoldingBuilderEx(), DumbAware {
         val virtualFile = file.virtualFile ?: return emptyArray()
         val path = Paths.get(virtualFile.path)
 
-        val manager = try { service<VaultManager>() } catch (_: Exception) { return emptyArray() }
+        val manager = service<VaultManager>()
         val index = manager.indexForPath(path) ?: return emptyArray()
 
         val editingRange = WikiLinkEditingState.editingRange(document)

@@ -1,11 +1,14 @@
 package dev.jarviis.obsidian.vault
 
+import com.intellij.openapi.diagnostic.logger
 import dev.jarviis.obsidian.model.ObsidianNote
 import dev.jarviis.obsidian.model.VaultDescriptor
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+
+private val LOG = logger<VaultIndex>()
 
 /**
  * Thread-safe in-memory index for a single Obsidian vault.
@@ -85,7 +88,6 @@ class VaultIndex(val descriptor: VaultDescriptor) {
                 }
             }
         }
-        val LOG = com.intellij.openapi.diagnostic.Logger.getInstance(VaultIndex::class.java)
         LOG.info("ObsidianBridge: backlinks built — $resolved resolved, $unresolved unresolved")
         if (unresolvedSamples.isNotEmpty()) LOG.info("ObsidianBridge: unresolved samples: $unresolvedSamples")
     }

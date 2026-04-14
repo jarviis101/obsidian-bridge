@@ -10,6 +10,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBList
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
+import dev.jarviis.obsidian.ObsidianBundle
 import dev.jarviis.obsidian.model.ObsidianNote
 import dev.jarviis.obsidian.vault.VaultManager
 import java.awt.BorderLayout
@@ -20,8 +21,7 @@ import javax.swing.SwingUtilities
 
 class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(BorderLayout()) {
 
-    // ── Outgoing links (this note → others) ────────────────────────────────
-    private val outgoingLabel = JBLabel("Links").apply {
+    private val outgoingLabel = JBLabel(ObsidianBundle.message("backlinks.label.links")).apply {
         border = javax.swing.BorderFactory.createEmptyBorder(4, 4, 2, 4)
         font = font.deriveFont(java.awt.Font.BOLD)
     }
@@ -32,8 +32,7 @@ class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(Bor
         addListSelectionListener { if (!it.valueIsAdjusting) openNote(selectedValue) }
     }
 
-    // ── Incoming backlinks (others → this note) ─────────────────────────────
-    private val backlinksLabel = JBLabel("Backlinks").apply {
+    private val backlinksLabel = JBLabel(ObsidianBundle.message("backlinks.label.backlinks")).apply {
         border = javax.swing.BorderFactory.createEmptyBorder(6, 4, 2, 4)
         font = font.deriveFont(java.awt.Font.BOLD)
     }
@@ -44,8 +43,7 @@ class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(Bor
         addListSelectionListener { if (!it.valueIsAdjusting) openNote(selectedValue) }
     }
 
-    // ── Status (shown when no md file is open) ──────────────────────────────
-    private val statusLabel = JBLabel("Open a Markdown file to see links").apply {
+    private val statusLabel = JBLabel(ObsidianBundle.message("backlinks.status.no.file")).apply {
         horizontalAlignment = JBLabel.CENTER
     }
 
@@ -72,7 +70,6 @@ class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(Bor
             horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER
         }, BorderLayout.CENTER)
 
-        // Update panel when the active editor changes
         project.messageBus.connect().subscribe(
             FileEditorManagerListener.FILE_EDITOR_MANAGER,
             object : FileEditorManagerListener {
@@ -85,25 +82,23 @@ class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(Bor
             }
         )
 
-        // Reload when vault index changes
         service<VaultManager>().addChangeListener {
             SwingUtilities.invokeLater {
                 updateFor(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
             }
         }
 
-        // Show current file immediately
         updateFor(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
     }
 
     fun updateFor(file: VirtualFile?) {
         if (file == null || !file.name.endsWith(".md")) {
-            statusLabel.text = "Open a Markdown file to see links"
+            statusLabel.text = ObsidianBundle.message("backlinks.status.no.file")
             statusLabel.isVisible = true
             outgoingModel.removeAll()
             backlinksModel.removeAll()
-            outgoingLabel.text = "Links"
-            backlinksLabel.text = "Backlinks"
+            outgoingLabel.text = ObsidianBundle.message("backlinks.label.links")
+            backlinksLabel.text = ObsidianBundle.message("backlinks.label.backlinks")
             return
         }
 
@@ -113,28 +108,24 @@ class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(Bor
         val path = Paths.get(file.path)
         val projectIndex = manager.indexForProject(project)
 
-        // If a vault is configured for the project, use it only when the file belongs to it.
-        // If no vault is configured, fall back to whichever vault owns the file.
         val index = if (projectIndex != null) {
             projectIndex.takeIf { path.startsWith(it.descriptor.rootPath) }
         } else {
             manager.indexForPath(path)
         } ?: run {
-            outgoingLabel.text = "Links"
-            backlinksLabel.text = "Backlinks"
+            outgoingLabel.text = ObsidianBundle.message("backlinks.label.links")
+            backlinksLabel.text = ObsidianBundle.message("backlinks.label.backlinks")
             outgoingModel.removeAll()
             backlinksModel.removeAll()
             return
         }
 
-        // Outgoing: resolve each wiki-link in this note → unique target notes (by path)
         val currentNote = index.findByPath(path)
         val resolvedLinks = currentNote?.outgoingLinks
             ?.mapNotNull { index.resolve(it.target, path) }
             ?: emptyList()
         val outgoing = resolvedLinks.distinctBy { it.path }.sortedBy { it.name }
 
-        // Incoming: notes that link to this file
         val incoming = index.backlinksFor(path)
 
         outgoingModel.replaceAll(outgoing)
@@ -142,10 +133,10 @@ class BacklinksPanel(private val project: Project) : JBPanel<BacklinksPanel>(Bor
 
         val totalLinks = currentNote?.outgoingLinks?.size ?: 0
         outgoingLabel.text = if (totalLinks == outgoing.size)
-            "Links (${outgoing.size})"
+            ObsidianBundle.message("backlinks.label.links.count", outgoing.size)
         else
-            "Links (${outgoing.size} notes · ${totalLinks} links)"
-        backlinksLabel.text = "Backlinks (${incoming.size})"
+            ObsidianBundle.message("backlinks.label.links.count.detail", outgoing.size, totalLinks)
+        backlinksLabel.text = ObsidianBundle.message("backlinks.label.backlinks.count", incoming.size)
     }
 
     private fun openNote(note: ObsidianNote?) {

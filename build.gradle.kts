@@ -13,7 +13,7 @@ val localProps = Properties().also { props ->
 fun localProp(key: String): String? = localProps.getProperty(key)
 
 group = "dev.jarviis.obsidian"
-version = "1.1.4"
+version = "1.1.5"
 
 kotlin {
     jvmToolchain(21)
@@ -46,11 +46,7 @@ intellijPlatform {
         }
         changeNotes = """
             <ul>
-                <li><b>Graph live updates</b> — the graph now automatically refreshes when vault files are created, deleted, moved, or when wiki-links are added or removed inside a note.</li>
-                <li><b>Wiki-link autocomplete for duplicate names</b> — notes with the same filename now all appear in the completion list; selecting one inserts the full disambiguating path. The prefix filter also matches against folder paths.</li>
-                <li><b>Alias folding fix</b> — <code>[[note|Alias]]</code> now correctly renders as <em>Alias</em> even when the link already had a prior fold with a different display text.</li>
-                <li><b>Fold refresh on vault ready</b> — <code>.md</code> files opened during IDE startup now receive their wiki-link folds once the vault index is fully built.</li>
-                <li><b>Graph colors</b> — replaced direct <code>java.awt.Color</code> alpha usage with <code>ColorUtil.withAlpha</code> for proper theme support.</li>
+                <li><b>Localization</b> — all user-visible strings are now served through the plugin's message bundle; no more hardcoded English text in the UI.</li>
             </ul>
         """.trimIndent()
     }

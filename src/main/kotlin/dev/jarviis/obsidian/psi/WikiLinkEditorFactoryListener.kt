@@ -51,8 +51,6 @@ class WikiLinkEditorFactoryListener : EditorFactoryListener {
     }
 }
 
-// ── Mouse listener ────────────────────────────────────────────────────────────
-
 private class WikiLinkClickListener : EditorMouseListener {
 
     override fun mousePressed(event: EditorMouseEvent) {
@@ -66,7 +64,6 @@ private class WikiLinkClickListener : EditorMouseListener {
         val region = editor.foldingModel.getCollapsedRegionAtOffset(offset) ?: return
 
         if (event.mouseEvent.isMetaDown) {
-            // Cmd+Click → expand for editing
             editor.foldingModel.runBatchFoldingOperation {
                 region.isExpanded = true
             }
@@ -76,7 +73,6 @@ private class WikiLinkClickListener : EditorMouseListener {
                 region.startOffset until region.endOffset
             )
         } else {
-            // Regular click → navigate
             val regionText = editor.document.charsSequence
                 .subSequence(region.startOffset, region.endOffset).toString()
             val target = extractTarget(regionText) ?: return
@@ -86,8 +82,6 @@ private class WikiLinkClickListener : EditorMouseListener {
         event.mouseEvent.consume()
     }
 }
-
-// ── Caret listener ────────────────────────────────────────────────────────────
 
 private class WikiLinkCaretListener(private val editor: Editor) : CaretListener {
 
@@ -102,14 +96,12 @@ private class WikiLinkCaretListener(private val editor: Editor) : CaretListener 
         val oldRange = findWikiLinkRangeAt(text, oldOffset)
         val newRange = findWikiLinkRangeAt(text, newOffset)
 
-        // Keep editing state current so FoldingBuilder skips this range
         if (newRange != null) {
             WikiLinkEditingState.setEditing(editor.document, newRange)
         } else {
             WikiLinkEditingState.clearEditing(editor.document)
         }
 
-        // Caret left a wiki-link region → auto-fold it
         if (oldRange != null && oldRange != newRange) {
             foldRange(oldRange)
         }
@@ -122,7 +114,7 @@ private class WikiLinkCaretListener(private val editor: Editor) : CaretListener 
             val wikiText = editor.document.charsSequence
                 .subSequence(range.first, range.last + 1).toString()
             val target = extractTarget(wikiText) ?: return@runBatchFoldingOperation
-            val manager = try { service<VaultManager>() } catch (_: Exception) { return@runBatchFoldingOperation }
+            val manager = service<VaultManager>()
             val index = manager.indexForPath(path) ?: return@runBatchFoldingOperation
             val note = index.resolve(target, path) ?: return@runBatchFoldingOperation
             val displayText = extractAlias(wikiText)?.takeIf { it.isNotBlank() } ?: note.name
@@ -144,8 +136,6 @@ private class WikiLinkCaretListener(private val editor: Editor) : CaretListener 
         }
     }
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 private fun findWikiLinkRangeAt(text: CharSequence, offset: Int): IntRange? {
     for (match in WIKILINK_REGEX.findAll(text)) {
@@ -176,7 +166,7 @@ private fun openNote(
     target: String,
     contextPath: java.nio.file.Path
 ): Boolean {
-    val manager = try { service<VaultManager>() } catch (_: Exception) { return false }
+    val manager = service<VaultManager>()
     val index = manager.indexForPath(contextPath) ?: return false
     val note = index.resolve(target, contextPath) ?: return false
     val vFile = LocalFileSystem.getInstance().findFileByNioFile(note.path) ?: return false

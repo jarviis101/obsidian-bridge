@@ -72,7 +72,7 @@ class AppSettingsConfigurable : Configurable {
         }
         if (!vaultDescriptor.hasObsidianConfig) {
             val proceed = Messages.showYesNoDialog(
-                "The selected folder has no .obsidian/ directory. It will work as a plain Markdown vault. Continue?",
+                ObsidianBundle.message("settings.vault.no.obsidian.confirm"),
                 ObsidianBundle.message("settings.app.display.name"),
                 Messages.getQuestionIcon()
             )
