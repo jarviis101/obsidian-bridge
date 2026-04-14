@@ -11,6 +11,7 @@ Plugin ID: `dev.jarviis.obsidian.obsidian-bridge` | Package: `dev.jarviis.obsidi
 - **Code standards**: @.claude/rules/code-standards.md — Kotlin style, naming, null safety, what to avoid
 - **IntelliJ Plugin SDK**: @.claude/rules/plugin-sdk.md — when touching `plugin.xml`, extension points, IntelliJ APIs, or UI
 - **Obsidian domain**: @.claude/rules/obsidian.md — when touching vault logic, wiki-link parsing, backlinks, or frontmatter
+- **Git**: @.claude/rules/git.md — commit message format, pre-commit checks, version bumping
 
 ## 2. Commands
 
